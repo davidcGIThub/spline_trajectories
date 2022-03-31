@@ -28,15 +28,14 @@ class BsplineEvaluation:
             self._knot_points = self.__create_clamped_knot_points()
         else:
             self._knot_points = self.__create_knot_points()
+        self._end_time = self._knot_points[self.__get_number_of_control_points()]
 
     def get_spline_data(self , number_of_data_points):
         '''
         Returns equally distributed data points for the spline, as well
         as time data for the parameterization
         '''
-        number_of_control_points = self.__get_number_of_control_points()
-        end_time = self._knot_points[number_of_control_points]
-        time_data = np.linspace(self._start_time, end_time, number_of_data_points)
+        time_data = np.linspace(self._start_time, self._end_time, number_of_data_points)
         dimension = self._control_points.ndim
         if dimension == 1:
             spline_data = np.zeros(number_of_data_points)
@@ -55,9 +54,7 @@ class BsplineEvaluation:
         Returns equally distributed data points for the derivative of the spline, 
         as well as time data for the parameterization
         '''
-        number_of_control_points = self.__get_number_of_control_points()
-        end_time = self._knot_points[number_of_control_points]
-        time_data = np.linspace(self._start_time, end_time, number_of_data_points)
+        time_data = np.linspace(self._start_time, self._end_time, number_of_data_points)
         dimension = self._control_points.ndim
         if dimension == 1:
             spline_derivative_data = np.zeros(number_of_data_points)
@@ -110,7 +107,8 @@ class BsplineEvaluation:
         This function evaluates the B spline at the given time
         """
         if self._order > 5 or (self._clamped and self._order > 3):
-            spline_at_time_t = self.__cox_de_boor_formula_table_method(time)
+            # spline_at_time_t = self.__cox_de_boor_table_method(time)
+            spline_at_time_t = self.__cox_de_boor_recursion_method(time)
         else:
             spline_at_time_t = self.__matrix_method(time)
         return spline_at_time_t
@@ -125,6 +123,15 @@ class BsplineEvaluation:
         else:
             derivative_at_time_t = self.__evaluate_derivative_matrix_method(time, rth_derivative)
         return derivative_at_time_t
+
+    def get_time_to_control_point_correlation(self):
+        '''
+        This is not a true correlation but distributes the control points
+        evenly through the time interval and provides a time to each control point
+        '''
+        number_of_control_points = self.__get_number_of_control_points()
+        time_array = np.linspace(self._start_time, self._end_time, number_of_control_points)
+        return time_array
 
     def __create_knot_points(self):
         '''
@@ -177,48 +184,68 @@ class BsplineEvaluation:
             number_of_control_points = len(self._control_points[0])
         return number_of_control_points
 
-    def __cox_de_boor_formula_table_method(self, time):
-        preceding_knot_index = self.__find_preceding_knot_index(time.real)
+    def __cox_de_boor_recursion_method(self, time):
+        """
+        This function evaluates the B spline at the given time
+        """
+        preceding_knot_index = self.__find_preceding_knot_index(time)
         initial_control_point_index = preceding_knot_index - self._order
         dimension = self._control_points.ndim
         spline_at_time_t = np.zeros((dimension,1))
-        if isinstance(time, complex):
-                    spline_at_time_t = spline_at_time_t + 0j
-        number_of_control_points = self.__get_number_of_control_points()
-        # if time.real >= self._knot_points[number_of_control_points] and self._clamped:
-        #     spline_at_time_t = self.__get_ith_control_point(number_of_control_points-1) + time.imag
-        # else:
         for i in range(initial_control_point_index , initial_control_point_index+self._order + 1):
-            table = np.zeros((self._order+1,self._order+1))
-            if isinstance(time, complex):
-                table = table + 0j
-            #loop through rows to create the first column
-            for y in range(self._order+1):
+            if dimension == 1:
+                control_point = self._control_points[i]
+            else:
+                control_point = self._control_points[:,i][:,None]
+            basis_function = self.__cox_de_boor_recursion_basis_function(time, i, self._order)
+            spline_at_time_t += basis_function*control_point
+        return spline_at_time_t
+
+    def __cox_de_boor_table_method(self, time):
+        """
+        This function evaluates the B spline at the given time
+        """
+        preceding_knot_index = self.__find_preceding_knot_index(time)
+        initial_control_point_index = preceding_knot_index - self._order
+        dimension = self._control_points.ndim
+        spline_at_time_t = np.zeros((dimension,1))
+        for i in range(initial_control_point_index , initial_control_point_index+self._order + 1):
+            if dimension == 1:
+                control_point = self._control_points[i]
+            else:
+                control_point = self._control_points[:,i][:,None]
+            basis_function = self.__cox_de_boor_table_basis_function(time, i, self._order)
+            spline_at_time_t += basis_function*control_point
+        return spline_at_time_t
+
+    def __cox_de_boor_table_basis_function(self, time, i, kappa):
+        number_of_control_points = self.__get_number_of_control_points()
+        table = np.zeros((self._order+1,self._order+1))
+        #loop through rows to create the first column
+        for y in range(self._order+1):
+            t_i_y = self._knot_points[i+y]
+            t_i_y_1 = self._knot_points[i+y+1]
+            if time >= t_i_y and time < t_i_y_1:
+                table[y,0] = 1
+            elif time == t_i_y_1 and t_i_y_1 == self._knot_points[number_of_control_points] and self._clamped:
+                table[y,0] = 1
+        # loop through remaining columns
+        for kappa in range(1,self._order+1): 
+            # loop through rows
+            number_of_rows = self._order+1 - kappa
+            for y in range(number_of_rows):
                 t_i_y = self._knot_points[i+y]
                 t_i_y_1 = self._knot_points[i+y+1]
-                if time.real >= t_i_y and time.real < t_i_y_1:
-                    table[y,0] = 1
-                elif time.real == t_i_y_1 and t_i_y_1 == self._knot_points[number_of_control_points] and self._clamped:
-                    table[y,0] = 1
-            # loop through remaining columns
-            for kappa in range(1,self._order+1): 
-                # loop through rows
-                number_of_rows = self._order+1 - kappa
-                for y in range(number_of_rows):
-                    t_i_y = self._knot_points[i+y]
-                    t_i_y_1 = self._knot_points[i+y+1]
-                    t_i_y_k = self._knot_points[i+y+kappa]
-                    t_i_y_k_1 = self._knot_points[i+y+kappa+1]
-                    horizontal_term = 0
-                    diagonal_term = 0
-                    if t_i_y_k > t_i_y:
-                        horizontal_term = table[y,kappa-1] * (time - t_i_y) / (t_i_y_k - t_i_y)
-                    if t_i_y_k_1 > t_i_y_1:
-                        diagonal_term = table[y+1,kappa-1] * (t_i_y_k_1 - time)/(t_i_y_k_1 - t_i_y_1)
-                    table[y,kappa] = horizontal_term + diagonal_term
-            control_point = self.__get_ith_control_point(i)
-            spline_at_time_t += table[0,self._order]* control_point
-        return spline_at_time_t
+                t_i_y_k = self._knot_points[i+y+kappa]
+                t_i_y_k_1 = self._knot_points[i+y+kappa+1]
+                horizontal_term = 0
+                diagonal_term = 0
+                if t_i_y_k > t_i_y:
+                    horizontal_term = table[y,kappa-1] * (time - t_i_y) / (t_i_y_k - t_i_y)
+                if t_i_y_k_1 > t_i_y_1:
+                    diagonal_term = table[y+1,kappa-1] * (t_i_y_k_1 - time)/(t_i_y_k_1 - t_i_y_1)
+                table[y,kappa] = horizontal_term + diagonal_term
+        return table[0,self._order]
     
     def __get_ith_control_point(self, i):
         dimension = self._control_points.ndim
@@ -232,7 +259,7 @@ class BsplineEvaluation:
         """
         This function evaluates the B spline at the given time
         """
-        preceding_knot_index = self.__find_preceding_knot_index(time.real)
+        preceding_knot_index = self.__find_preceding_knot_index(time)
         preceding_knot_point = self._knot_points[preceding_knot_index]
         initial_control_point_index = preceding_knot_index - self._order
         dimension = self._control_points.ndim
@@ -240,16 +267,18 @@ class BsplineEvaluation:
         M = self.__get_M_matrix(initial_control_point_index)
         i_p = initial_control_point_index
         tau = time - preceding_knot_point
-        P = np.zeros((dimension,self._order+1))
+        if dimension > 1:
+            P = np.zeros((dimension,self._order+1))
+        else:
+            P = np.zeros(self._order+1)
         T = np.ones((self._order+1,1))
-        if isinstance(time, complex):
-            P = P + 0j
-            T = T + 0j
-            M = M + 0j
         for i in range(self._order+1):
             y = i
             kappa = i
-            P[:,y] = self._control_points[:,i_p+y]
+            if dimension > 1:
+                P[:,y] = self._control_points[:,i_p+y]
+            else:
+                P[y] = self._control_points[i_p+y]
             T[kappa,0] = (tau/self._scale_factor)**(self._order-kappa)
         spline_at_time_t = np.dot(P, np.dot(M,T))
         return spline_at_time_t
@@ -355,11 +384,11 @@ class BsplineEvaluation:
         '''
         This function evaluates the rth derivative of the spline at time t
         '''
-        derivative_at_time_t = self.__evaluate_derivative_complex_step_method(time)
         # if self._order > 5 or (self._order > 3 and self._clamped):
-        #     derivative_at_time_t = self.__evaluate_derivative_complex_step_method(time)
+        #     derivative_at_time_t = self.__evaluate_rth_derivative_step_method(time,rth_derivative)
         # else:
-        #     derivative_at_time_t = self.__evaluate_rth_derivative_matrix_method(time, rth_derivative)
+        # derivative_at_time_t = self.__evaluate_rth_derivative_matrix_method(time, rth_derivative)
+        derivative_at_time_t = self.__evaulate_derivative_at_time_t_recursive(time, rth_derivative)
         return derivative_at_time_t
 
     def __evaluate_rth_derivative_matrix_method(self, time, rth_derivative):
@@ -370,36 +399,68 @@ class BsplineEvaluation:
         M = self.__get_M_matrix(initial_control_point_index)
         i_p = initial_control_point_index
         tau = (time - preceding_knot_point)
-        P = np.zeros((dimension,self._order+1))
+        if dimension > 1:
+            P = np.zeros((dimension,self._order+1))
+        else:
+            P = np.zeros(self._order+1)
         for y in range(self._order+1):
-            P[:,y] = self._control_points[:,i_p+y]
-        T = np.ones((self._order+1,1))
+            if dimension > 1:
+                P[:,y] = self._control_points[:,i_p+y]
+            else:
+                P[y] = self._control_points[i_p+y]
+        T = np.zeros((self._order+1,1))
         for i in range(self._order-rth_derivative+1):
             T[i,0] = (tau**(self._order-rth_derivative-i)*np.math.factorial(self._order-i)) /  (self._scale_factor**(self._order-i)*np.math.factorial(self._order-i-rth_derivative))
         spline_derivative_at_time_t = np.dot(P, np.dot(M,T))
         return spline_derivative_at_time_t
 
-    def __evaluate_rth_derivative(self, time, rth_derivative, delta = 1e-6):
+
+    def __evaluate_rth_derivative_step_method(self, time, rth_derivative, delta = 1e-6):
         # min delta stuff
+        #check if derivative is possible
         if rth_derivative == 1:
             return self.__evaluate_derivative_complex_step_method(time)
         else:
-            end_time = self._knot_points[self.__get_number_of_control_points()]
+            dimension = self._control_points.ndim
             if time-delta*(rth_derivative-1) < self._start_time:
-                derivative_array = np.zeros(rth_derivative)
-                derivative_time = time
-            elif time+delta*(rth_derivative-1) > end_time:
-                derivative_array = np.zeros(rth_derivative)
-                derivative_time = time-delta*rth_derivative
+                # number_of_slots = rth_derivative
+                derivative_time = self._start_time
+                # derivative_index = int(np.floor(rth_derivative/2))
+            elif time+delta*(rth_derivative-1) > self._end_time:
+                # number_of_slots = rth_derivative
+                derivative_time = self._end_time-delta*rth_derivative*2
+                # derivative_index = int(np.ceil(rth_derivative/2))
             else:
-                derivative_array = np.zeros(2*rth_derivative-1)
+                # number_of_slots = 2*rth_derivative-1
                 derivative_time = time-delta*rth_derivative
+            derivative_index = rth_derivative
+            number_of_slots = 2*rth_derivative-1
+            if dimension > 1:
+                derivative_array = np.zeros((dimension, number_of_slots))
+                axis = 1
+            else:
+                derivative_array = np.zeros(number_of_slots)
+                axis = 0
             # fill derivative array
-            for i in range(len(derivative_array)):
-                derivative_array[i] = self.__evaluate_derivative_complex_step_method(derivative_time)
+            for i in range(number_of_slots):
+                if dimension == 1:
+                    derivative_array[i] = self.__evaluate_derivative_complex_step_method(derivative_time)
+                else:
+                    derivative_array[:,i][:,None] = self.__evaluate_derivative_complex_step_method(derivative_time)
                 derivative_time += delta
-            for i in range(rth_derivative):
-                pass
+            # take the derivatives
+            # print("derivative_array: " , derivative_array)
+            for i in range(1,rth_derivative+1):
+                derivative_array = np.gradient(derivative_array,delta,axis=axis)
+                # derivative_array = np.diff(derivative_array,axis)/delta
+                if i > self._order:
+                    derivative_array = derivative_array*0
+                    break
+            if dimension == 1:
+                derivative = derivative_array[derivative_index]
+            else:
+                derivative = derivative_array[:,derivative_index][:,None]
+            return derivative
 
     def __evaluate_derivative_complex_step_method(self, time):
         delta = 1e-30
@@ -407,3 +468,104 @@ class BsplineEvaluation:
         complex_function_output = self.get_spline_at_time_t(complex_variable)
         derivative_at_time_t = complex_function_output.imag / delta
         return derivative_at_time_t
+
+    def __evaulate_derivative_at_time_t_recursive(self, time, r):
+        """
+        This function evaluates the B spline at the given time
+        """
+        preceding_knot_index = self.__find_preceding_knot_index(time)
+        initial_control_point_index = preceding_knot_index - self._order
+        dimension = self._control_points.ndim
+        derivative_at_time_t = np.zeros((dimension,1))
+        for i in range(initial_control_point_index , initial_control_point_index+self._order + 1):
+            if dimension == 1:
+                control_point = self._control_points[i]
+            else:
+                control_point = self._control_points[:,i][:,None]
+            iteration_value = self.__rth_derivative_cox_de_boor_recursion_basis_function(time, i,self._order, r) * control_point
+            derivative_at_time_t += iteration_value
+        return derivative_at_time_t
+    
+    def __cox_de_boor_recursion_basis_function(self, time, i, kappa):
+        t = time
+        t_i = self._knot_points[i]
+        t_i_1 = self._knot_points[i+1]
+        t_i_k = self._knot_points[i+kappa]
+        t_i_k_1 = self._knot_points[i+kappa+1]
+        if kappa == 0:
+            if (t >= t_i and t < t_i_1) or (t == self._end_time and t >= t_i and t == t_i_1):
+                basis_function = 1
+            else:
+                basis_function = 0
+        else:
+            if t_i < t_i_k:
+                term1 = (t - t_i) / (t_i_k - t_i) * self.__cox_de_boor_recursion_basis_function(t,i,kappa-1)
+            else:
+                term1 = 0
+            if t_i_1 < t_i_k_1:
+                term2 = (t_i_k_1 - t)/(t_i_k_1 - t_i_1) * self.__cox_de_boor_recursion_basis_function(t,i+1,kappa-1)
+            else:
+                term2 = 0
+            basis_function = term1 + term2
+        return basis_function
+
+    def __derivative_cox_de_boor_recursion_basis_function(self, time, i, kappa):
+        t = time
+        t_i = self._knot_points[i]
+        t_i_1 = self._knot_points[i+1]
+        t_i_k = self._knot_points[i+kappa]
+        t_i_k_1 = self._knot_points[i+kappa+1]
+        if kappa == 0:
+            if t >= t_i and t < t_i_1:
+                basis_function = 1
+            else:
+                basis_function = 0
+        else:
+            if t_i < t_i_k:
+                term1 = (1) / (t_i_k - t_i) * self.__cox_de_boor_recursion_basis_function(t,i,kappa-1)
+                if kappa-1 > 0:
+                    term1 += (t - t_i) / (t_i_k - t_i) * self.__derivative_cox_de_boor_recursion_basis_function(t,i,kappa-1)
+            else:
+                term1 = 0
+            if t_i_1 < t_i_k_1:
+                term2 = (-1)/(t_i_k_1 - t_i_1) * self.__cox_de_boor_recursion_basis_function(t,i+1,kappa-1)
+                if kappa-1 > 0:
+                    term2 += (t_i_k_1 - t)/(t_i_k_1 - t_i_1) * self.__derivative_cox_de_boor_recursion_basis_function(t,i+1,kappa-1)
+            else:
+                term2 = 0
+            basis_function = term1 + term2
+        return basis_function
+
+
+    def __rth_derivative_cox_de_boor_recursion_basis_function(self, time, i, kappa, r):
+        if r == 0:
+            return self.__cox_de_boor_recursion_basis_function(time, i, kappa)
+        t = time
+        t_i = self._knot_points[i]
+        t_i_1 = self._knot_points[i+1]
+        t_i_k = self._knot_points[i+kappa]
+        t_i_k_1 = self._knot_points[i+kappa+1]
+        if kappa == 0:
+            # if t >= t_i and t < t_i_1:
+            #     basis_function = 1
+            # else:
+            basis_function = 0
+        else:
+            if t_i < t_i_k:
+                if kappa-1 > 0:
+                    term1 = (t - t_i) / (t_i_k - t_i) * self.__rth_derivative_cox_de_boor_recursion_basis_function(t,i,kappa-1,r) + \
+                        (r) / (t_i_k - t_i) * self.__rth_derivative_cox_de_boor_recursion_basis_function(t,i,kappa-1, r-1)
+                else:
+                    term1 = (1) / (t_i_k - t_i) * self.__rth_derivative_cox_de_boor_recursion_basis_function(t,i,kappa-1, r-1)
+            else:
+                term1 = 0
+            if t_i_1 < t_i_k_1:
+                if kappa-1 > 0:
+                    term2 = (t_i_k_1 - t)/(t_i_k_1 - t_i_1) * self.__rth_derivative_cox_de_boor_recursion_basis_function(t,i+1,kappa-1,r) + \
+                        (-r)/(t_i_k_1 - t_i_1) * self.__rth_derivative_cox_de_boor_recursion_basis_function(t,i+1,kappa-1,r-1)
+                else:
+                    term2 = (-1)/(t_i_k_1 - t_i_1) * self.__rth_derivative_cox_de_boor_recursion_basis_function(t,i+1,kappa-1,r-1)
+            else:
+                term2 = 0
+            basis_function = term1 + term2
+        return basis_function
