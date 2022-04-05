@@ -38,8 +38,8 @@ def derivative_recursive_bspline_evaluation(time, r, control_points, knot_points
             control_point = control_points[i]
         else:
             control_point = control_points[:,i][:,None]
-        iteration_value = __derivative_cox_de_boor_recursion_basis_function(time, i,order, r, knot_points, end_time,  clamped) * control_point
-        derivative_at_time_t += iteration_value
+        basis_function_derivative = __derivative_cox_de_boor_recursion_basis_function(time, i,order, r, knot_points, end_time,  clamped)
+        derivative_at_time_t += basis_function_derivative*control_point
     return derivative_at_time_t
 
 def __cox_de_boor_recursion_basis_function(time, i, kappa ,knot_points, end_time,  clamped):

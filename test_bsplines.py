@@ -16,12 +16,12 @@ from bsplines import BsplineEvaluation
 control_points = np.array([[-3,-4,-2,-.5,1,0,2,3.5,3],[.5,3.5,6,5.5,3.7,2,-1,2,5]]) # figures
 # control_points = np.array([[0,0,0,0,0,2,3,5,6,7.4,8,9.5,10,10,10,10,10],[0,0,0,0,0,2,5,8,6,4.5,7,9.5,10,10,10,10,10]]) # Poster
 # control_points = np.array([1,2,2.5,4,5.2,6,6.3,5]) # 1 dimensional
-order = 4
+order = 6
 start_time = 0
 number_data_points = 1000
 dimension = control_points.ndim
 scale_factor = 1
-r = 1
+r = 7
 clamped = True
 
 bspline = BsplineEvaluation(control_points, order, start_time,scale_factor,clamped )
@@ -62,10 +62,8 @@ plt.legend()
 ax = plt.gca()
 plt.show()
 
-
 x_derivative  = spline_derivative_data[0,:]
 y_derivative = spline_derivative_data[1,:]
-
 
 plt.figure("Derivative")
 plt.plot(time_data, x_derivative, color='red')
