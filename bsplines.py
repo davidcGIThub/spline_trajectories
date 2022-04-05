@@ -7,6 +7,7 @@ higher than the 5th degree. This also evaluates the derivatives of the B-spline
 import numpy as np 
 from matrix_evaluation import matrix_bspline_evaluation, derivative_matrix_bspline_evaluation
 from recursive_evaluation import recursive_bspline_evaluation, derivative_recursive_bspline_evaluation
+from table_evaluation import table_bspline_evaluation
 from helper_functions import count_number_of_control_points
 class BsplineEvaluation:
     """
@@ -76,8 +77,8 @@ class BsplineEvaluation:
         This function evaluates the B spline at the given time
         """
         if self._order > 5 or (self._clamped and self._order > 3):
-            # spline_at_time_t = self.__cox_de_boor_table_method(time)
-            spline_at_time_t = recursive_bspline_evaluation(time, self._control_points, self._knot_points, self._clamped)
+            # spline_at_time_t = recursive_bspline_evaluation(time, self._control_points, self._knot_points, self._clamped)
+            spline_at_time_t = table_bspline_evaluation(time, self._control_points, self._knot_points, self._clamped)
         else:
             spline_at_time_t = matrix_bspline_evaluation(time, self._scale_factor, self._control_points, self._knot_points, self._clamped)
         return spline_at_time_t
