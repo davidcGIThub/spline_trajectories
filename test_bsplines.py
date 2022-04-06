@@ -5,15 +5,14 @@ from helper_functions import get_dimension
 from bsplines import BsplineEvaluation
 
 # control_points = np.array([[0,3,-2,-.5,1,0,2,3,3,3],[0,4,6,5.5,3.7,2,-1,5,5,5]]) # initial velocity of 25
-# control_points = np.random.randint(10, size=(2,13)) # random
-# control_points = np.concatenate((np.array([[0,0,0,0],[0,0,0,0]]) , control_points , np.array([[10,10,10,10],[10,10,10,10]])),axis=1)
+control_points = np.random.randint(10, size=(2,13)) # random
 # control_points = np.array([[-3,-3,-3,-2,-.5,1,0,2,3,3,3],[.5,.5,.5,6,5.5,3.7,2,-1,5,5,5]]) # zero initial velocity
 # control_points = np.array([[-.5,1,0],[5.5,3.7,2]]) # 3 control points
 # control_points = np.array([[-2,-.5,1,0],[6,5.5,3.7,2]]) # 4 control points
 # control_points = np.array([[-3,-2,-.5,1,0],[.5,6,5.5,3.7,2]]) # 5 control points
 # control_points = np.array([[-3,-4,-2,-.5,1,0],[.5,3.5,6,5.5,3.7,2]]) # 6 control points
 # control_points = np.array([[-3,-4,-2,-.5,1,0,2],[.5,3.5,6,5.5,3.7,2,-1]]) # 7 control points
-control_points = np.array([[-3,-4,-2,-.5,1,0,2,3.5,3],[.5,3.5,6,5.5,3.7,2,-1,2,5]]) # figures
+# control_points = np.array([[-3,-4,-2,-.5,1,0,2,3.5,3],[.5,3.5,6,5.5,3.7,2,-1,2,5]]) # figures
 # control_points = np.array([[-3,-4,-2,-.5,1,0,2,3.5,3],[.5,3.5,6,5.5,3.7,2,-1,2,5],[1,3.2,5,0,3.3,1.5,-1,2.5,4]]) # 3 D
 # control_points = np.array([[0,0,0,0,0,2,3,5,6,7.4,8,9.5,10,10,10,10,10],[0,0,0,0,0,2,5,8,6,4.5,7,9.5,10,10,10,10,10]]) # Poster
 # control_points = np.array([1,2,2.5,4,5.2,6,6.3,5]) # 1 dimensional
