@@ -7,7 +7,7 @@ higher than the 5th degree. This also evaluates the derivatives of the B-spline
 import numpy as np 
 from matrix_evaluation import matrix_bspline_evaluation, derivative_matrix_bspline_evaluation
 from table_evaluation import table_bspline_evaluation, derivative_table_bspline_evaluation
-from helper_functions import count_number_of_control_points
+from helper_functions import count_number_of_control_points, get_dimension
 class BsplineEvaluation:
     """
     This class contains contains code to evaluate an open uniform b spline 
@@ -38,7 +38,7 @@ class BsplineEvaluation:
         as time data for the parameterization
         '''
         time_data = np.linspace(self._start_time, self._end_time, number_of_data_points)
-        dimension = self._control_points.ndim
+        dimension = get_dimension(self._control_points)
         if dimension == 1:
             spline_data = np.zeros(number_of_data_points)
         else:
@@ -57,7 +57,7 @@ class BsplineEvaluation:
         as well as time data for the parameterization
         '''
         time_data = np.linspace(self._start_time, self._end_time, number_of_data_points)
-        dimension = self._control_points.ndim
+        dimension = get_dimension(self._control_points)
         if dimension == 1:
             spline_derivative_data = np.zeros(number_of_data_points)
         else:
@@ -69,6 +69,18 @@ class BsplineEvaluation:
             else:
                 spline_derivative_data[:,i][:,None] = self.get_derivative_at_time_t(t, rth_derivative)
         return spline_derivative_data, time_data
+
+    def get_spline_curvature_data(self,number_of_data_points):
+        '''
+        Returns equally distributed data points for the curvature of the spline, 
+        as well as time data for the parameterization
+        '''
+        time_data = np.linspace(self._start_time, self._end_time, number_of_data_points)
+        spline_curvature_data = np.zeros(number_of_data_points)
+        for i in range(number_of_data_points):
+            t = time_data[i]
+            spline_curvature_data[i] = self.get_curvature_at_time_t(t)
+        return spline_curvature_data, time_data
 
 
     def get_spline_at_time_t(self, time):
@@ -91,6 +103,20 @@ class BsplineEvaluation:
             derivative_at_time_t = derivative_matrix_bspline_evaluation(time, derivative_order, self._scale_factor, self._control_points, self._knot_points, self._clamped)
         return derivative_at_time_t
 
+    def get_curvature_at_time_t(self, time):
+        '''
+        This function evaluates the curvature at time t
+        '''
+        dimension = get_dimension(self._control_points)
+        if dimension == 1:
+            derivative_vector = np.array([1 , self.get_derivative_at_time_t(time,1)[0]])
+            derivative_2nd_vector = np.array([0 , self.get_derivative_at_time_t(time,2)[0]])
+        else:
+            derivative_vector = self.get_derivative_at_time_t(time,1)
+            derivative_2nd_vector = self.get_derivative_at_time_t(time,2)
+        curvature = np.linalg.norm(np.cross(derivative_vector.flatten(), derivative_2nd_vector.flatten())) / np.linalg.norm(derivative_vector)**3
+        return curvature
+
     def get_defined_knot_points(self):
         '''
         returns the knot points that are defined along the curve
@@ -112,7 +138,7 @@ class BsplineEvaluation:
         '''
         time_data = self.get_defined_knot_points()
         number_of_data_points = len(time_data)
-        dimension = self._control_points.ndim
+        dimension = get_dimension(self._control_points)
         if dimension == 1:
             spline_data = np.zeros(number_of_data_points)
         else:
@@ -157,57 +183,3 @@ class BsplineEvaluation:
         knot_points[self._order : self._order + number_of_unique_knot_points] = unique_knot_points
         knot_points[self._order + number_of_unique_knot_points: 2*self._order + number_of_unique_knot_points] = unique_knot_points[-1]
         return knot_points
-
-    # def __evaluate_rth_derivative_step_method(self, time, rth_derivative, delta = 1e-6):
-    #     # min delta stuff
-    #     #check if derivative is possible
-    #     if rth_derivative == 1:
-    #         return self.__evaluate_derivative_complex_step_method(time)
-    #     else:
-    #         dimension = self._control_points.ndim
-    #         if time-delta*(rth_derivative-1) < self._start_time:
-    #             # number_of_slots = rth_derivative
-    #             derivative_time = self._start_time
-    #             # derivative_index = int(np.floor(rth_derivative/2))
-    #         elif time+delta*(rth_derivative-1) > self._end_time:
-    #             # number_of_slots = rth_derivative
-    #             derivative_time = self._end_time-delta*rth_derivative*2
-    #             # derivative_index = int(np.ceil(rth_derivative/2))
-    #         else:
-    #             # number_of_slots = 2*rth_derivative-1
-    #             derivative_time = time-delta*rth_derivative
-    #         derivative_index = rth_derivative
-    #         number_of_slots = 2*rth_derivative-1
-    #         if dimension > 1:
-    #             derivative_array = np.zeros((dimension, number_of_slots))
-    #             axis = 1
-    #         else:
-    #             derivative_array = np.zeros(number_of_slots)
-    #             axis = 0
-    #         # fill derivative array
-    #         for i in range(number_of_slots):
-    #             if dimension == 1:
-    #                 derivative_array[i] = self.__evaluate_derivative_complex_step_method(derivative_time)
-    #             else:
-    #                 derivative_array[:,i][:,None] = self.__evaluate_derivative_complex_step_method(derivative_time)
-    #             derivative_time += delta
-    #         # take the derivatives
-    #         # print("derivative_array: " , derivative_array)
-    #         for i in range(1,rth_derivative+1):
-    #             derivative_array = np.gradient(derivative_array,delta,axis=axis)
-    #             # derivative_array = np.diff(derivative_array,axis)/delta
-    #             if i > self._order:
-    #                 derivative_array = derivative_array*0
-    #                 break
-    #         if dimension == 1:
-    #             derivative = derivative_array[derivative_index]
-    #         else:
-    #             derivative = derivative_array[:,derivative_index][:,None]
-    #         return derivative
-
-    # def __evaluate_derivative_complex_step_method(self, time):
-    #     delta = 1e-30
-    #     complex_variable = time + delta*1j
-    #     complex_function_output = self.get_spline_at_time_t(complex_variable)
-    #     derivative_at_time_t = complex_function_output.imag / delta
-    #     return derivative_at_time_t

@@ -1,4 +1,11 @@
 
+def get_dimension(control_points):
+    if control_points.ndim == 1:
+        dimension = 1
+    else:
+        dimension = len(control_points)
+    return dimension
+
 def count_number_of_control_points(control_points):
     if control_points.ndim == 1:
         number_of_control_points = len(control_points)

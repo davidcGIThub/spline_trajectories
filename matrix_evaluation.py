@@ -1,6 +1,6 @@
 import numpy as np
 from helper_functions import count_number_of_control_points, find_preceding_knot_index,\
-    calculate_number_of_control_points
+    calculate_number_of_control_points, get_dimension
     
 def matrix_bspline_evaluation(time, scale_factor, control_points, knot_points, clamped = False):
     """
@@ -9,17 +9,14 @@ def matrix_bspline_evaluation(time, scale_factor, control_points, knot_points, c
     """
     number_of_control_points = count_number_of_control_points(control_points)
     order = len(knot_points) - number_of_control_points - 1
-    print("number_of_control_points: " , number_of_control_points)
-    print("order: " , order)
     preceding_knot_index = find_preceding_knot_index(time, order, knot_points)
     preceding_knot_point = knot_points[preceding_knot_index]
     initial_control_point_index = preceding_knot_index - order
-    dimension = control_points.ndim
+    dimension = get_dimension(control_points)
     spline_at_time_t = np.zeros((dimension,1))
     i_p = initial_control_point_index
     tau = time - preceding_knot_point
     M = __get_M_matrix(i_p, order, knot_points, clamped)
-    print("M: " , M)
     if dimension > 1:
         P = np.zeros((dimension,order+1))
     else:
@@ -41,7 +38,7 @@ def derivative_matrix_bspline_evaluation(time, rth_derivative, scale_factor, con
     preceding_knot_index = find_preceding_knot_index(time, order, knot_points)
     preceding_knot_point = knot_points[preceding_knot_index]
     initial_control_point_index = preceding_knot_index - order
-    dimension = control_points.ndim
+    dimension = get_dimension(control_points)
     i_p = initial_control_point_index
     M = __get_M_matrix(i_p, order, knot_points, clamped)
     tau = (time - preceding_knot_point)

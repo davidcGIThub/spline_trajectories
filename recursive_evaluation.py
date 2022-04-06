@@ -1,5 +1,5 @@
 import numpy as np
-from helper_functions import count_number_of_control_points, find_preceding_knot_index, find_end_time
+from helper_functions import count_number_of_control_points, find_preceding_knot_index, find_end_time, get_dimension
 
 
 def recursive_bspline_evaluation(time, control_points, knot_points, clamped = False):
@@ -11,7 +11,7 @@ def recursive_bspline_evaluation(time, control_points, knot_points, clamped = Fa
     preceding_knot_index = find_preceding_knot_index(time, order, knot_points)
     initial_control_point_index = preceding_knot_index - order
     end_time = find_end_time(control_points, knot_points)
-    dimension = control_points.ndim
+    dimension = get_dimension(control_points)
     spline_at_time_t = np.zeros((dimension,1))
     for i in range(initial_control_point_index , initial_control_point_index+order + 1):
         if dimension == 1:
@@ -31,7 +31,7 @@ def derivative_recursive_bspline_evaluation(time, r, control_points, knot_points
     preceding_knot_index = find_preceding_knot_index(time, order, knot_points)
     initial_control_point_index = preceding_knot_index - order
     end_time = find_end_time(control_points, knot_points)
-    dimension = control_points.ndim
+    dimension = get_dimension(control_points)
     derivative_at_time_t = np.zeros((dimension,1))
     for i in range(initial_control_point_index , initial_control_point_index+order + 1):
         if dimension == 1:
