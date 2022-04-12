@@ -19,7 +19,7 @@ def table_bspline_evaluation(time, control_points, knot_points, clamped = False)
             control_point = control_points[i]
         else:
             control_point = control_points[:,i][:,None]
-        basis_function = __cox_de_boor_table_basis_function(time, i, order, knot_points, end_time, clamped)
+        basis_function = cox_de_boor_table_basis_function(time, i, order, knot_points, end_time, clamped)
         spline_at_time_t += basis_function*control_point
     return spline_at_time_t
 
@@ -43,7 +43,7 @@ def derivative_table_bspline_evaluation(time, derivative_order, control_points, 
         spline_at_time_t += basis_function_derivative*control_point
     return spline_at_time_t
 
-def __cox_de_boor_table_basis_function(time, i, order , knot_points, end_time, clamped):
+def cox_de_boor_table_basis_function(time, i, order , knot_points, end_time, clamped):
     table = __cox_de_boor_table_basis_function_whole_table(time, i, order, knot_points, end_time, clamped)
     return table[0,order]
 

@@ -5,9 +5,11 @@ higher than the 5th degree. This also evaluates the derivatives of the B-spline
 """
 
 import numpy as np 
+import matplotlib.pyplot as plt
 from matrix_evaluation import matrix_bspline_evaluation, derivative_matrix_bspline_evaluation
-from table_evaluation import table_bspline_evaluation, derivative_table_bspline_evaluation
-from helper_functions import count_number_of_control_points, get_dimension
+from table_evaluation import table_bspline_evaluation, derivative_table_bspline_evaluation, \
+    cox_de_boor_table_basis_function
+from helper_functions import count_number_of_control_points, get_dimension, find_preceding_knot_index
 class BsplineEvaluation:
     """
     This class contains contains code to evaluate an open uniform b spline 
@@ -82,6 +84,18 @@ class BsplineEvaluation:
             spline_curvature_data[i] = self.get_curvature_at_time_t(t)
         return spline_curvature_data, time_data
 
+    def get_basis_function_data(self, number_of_data_points):
+        '''
+        Returns arrays of (num_basis_functions x num_data_points) of the basis
+        functions.
+        '''
+        num_basis_functions = count_number_of_control_points(self._control_points)
+        time_data = np.linspace(self._start_time, self._end_time, number_of_data_points)
+        basis_function_data = np.zeros((num_basis_functions, number_of_data_points))
+        for j in range(number_of_data_points):
+            t = time_data[j]
+            basis_function_data[:,j][:,None] = self.get_basis_functions_at_time_t(t)
+        return basis_function_data, time_data
 
     def get_spline_at_time_t(self, time):
         """
@@ -117,6 +131,17 @@ class BsplineEvaluation:
         curvature = np.linalg.norm(np.cross(derivative_vector.flatten(), derivative_2nd_vector.flatten())) / np.linalg.norm(derivative_vector)**3
         return curvature
 
+    def get_basis_functions_at_time_t(self,time):
+        '''
+        Returns the values for each basis function at time t
+        '''
+        end_time = self._end_time
+        num_basis_functions = count_number_of_control_points(self._control_points)
+        basis_functions_at_time_t = np.zeros((num_basis_functions,  1))
+        for i in range(num_basis_functions):
+            basis_functions_at_time_t[i,0] = cox_de_boor_table_basis_function(time, i, self._order , self._knot_points, end_time, self._clamped)
+        return basis_functions_at_time_t
+
     def get_defined_knot_points(self):
         '''
         returns the knot points that are defined along the curve
@@ -149,7 +174,7 @@ class BsplineEvaluation:
                 spline_data[i] = self.get_spline_at_time_t(t)
             else:
                 spline_data[:,i][:,None] = self.get_spline_at_time_t(t)
-        return spline_data
+        return spline_data, time_data
 
     def get_time_to_control_point_correlation(self):
         '''
@@ -183,3 +208,103 @@ class BsplineEvaluation:
         knot_points[self._order : self._order + number_of_unique_knot_points] = unique_knot_points
         knot_points[self._order + number_of_unique_knot_points: 2*self._order + number_of_unique_knot_points] = unique_knot_points[-1]
         return knot_points
+
+
+    def plot_spline(self, number_of_data_points, show_control_points = True, show_knot_points = True):
+        figure_title = str(self._order) + " Order B-Spline"
+        dimension = get_dimension(self._control_points)
+        spline_data, time_data = self.get_spline_data(number_of_data_points)
+        spline_at_knot_points, defined_knot_points = self.get_spline_at_knot_points()
+        plt.figure(figure_title)
+        if dimension == 3:
+            ax = plt.axes(projection='3d')
+            ax.set_box_aspect(aspect =(1,1,1))
+            ax.plot(spline_data[0,:], spline_data[1,:],spline_data[2,:],label="B-Spline")
+            if (show_knot_points):
+                ax.scatter(spline_at_knot_points[0,:], spline_at_knot_points[1,:],spline_at_knot_points[2,:],label="Spline at Knot Points")
+            if (show_control_points):
+                ax.plot(self._control_points[0,:], self._control_points[1,:],self._control_points[2,:])
+                ax.scatter(self._control_points[0,:], self._control_points[1,:],self._control_points[2,:],label="Control Points")
+            ax.set_xlabel('x')
+            ax.set_ylabel('y')
+            ax.set_zlabel('z')
+        elif dimension == 2:
+            plt.plot(spline_data[0,:], spline_data[1,:],label="B-Spline")
+            if (show_knot_points):
+                            plt.scatter(spline_at_knot_points[0,:], spline_at_knot_points[1,:],label="Spline at Knot Points")
+            if (show_control_points):
+                plt.plot(self._control_points[0,:], self._control_points[1,:])
+                plt.scatter(self._control_points[0,:], self._control_points[1,:],linewidths=2,label="Control Points")
+            plt.xlabel('x')
+            plt.ylabel('y')
+            ax = plt.gca()
+        elif dimension == 1:
+            plt.plot(time_data, spline_data,label="B-spline")
+            if (show_knot_points):
+                plt.scatter(defined_knot_points, spline_at_knot_points,label="Spline at Knot Points")
+            if (show_control_points):
+                control_point_times = self.get_time_to_control_point_correlation()
+                plt.scatter(control_point_times,self._control_points)
+                plt.plot(control_point_times,self._control_points,label="Control Points")
+            plt.xlabel('time')
+            plt.ylabel('b(t)')
+            ax = plt.gca()
+        else:
+            print("Spline dimensions to high to show representation")
+        plt.title(figure_title)
+        plt.legend()
+        plt.show()
+
+
+    def plot_spline_vs_time(self, number_of_data_points,show_knot_points = True):
+            figure_title = str(self._order) + " Order B-Spline vs Time"
+            dimension = get_dimension(self._control_points)
+            spline_data, time_data = self.get_spline_data(number_of_data_points)
+            spline_at_knot_points, defined_knot_points = self.get_spline_at_knot_points()
+            plt.figure(figure_title)
+            if(dimension > 1):
+                for i in range(dimension):
+                    spline_label = "Dimension " + str(i)
+                    plt.plot(time_data, spline_data[i,:],label=spline_label)
+                    if (show_knot_points):
+                        plt.scatter(defined_knot_points, spline_at_knot_points[i,:])
+            else:
+                plt.plot(time_data, spline_data,label="Spline")
+                if (show_knot_points):
+                    plt.scatter(defined_knot_points, spline_at_knot_points)
+            plt.xlabel('time')
+            plt.ylabel('b(t)')
+            ax = plt.gca()
+            plt.title(figure_title)
+            plt.legend()
+            plt.show()
+
+    def plot_basis_functions(self, number_of_data_points):
+        plt.figure("Basis Functions")
+        basis_function_data, time_data = self.get_basis_function_data(number_of_data_points)
+        for b in range(count_number_of_control_points(self._control_points)):
+            basis_label = "Function " + str(b)
+            basis_function  = basis_function_data[b,:]
+            plt.plot(time_data, basis_function, label=basis_label)
+        plt.xlabel('time')
+        plt.ylabel('N(t)')
+        plt.title("Basis Functions")
+        plt.legend()
+        plt.show()
+
+    def plot_derivative(self, number_of_data_points, derivative_order):
+        figure_title = str(derivative_order) + " Order Derivative"
+        dimension = get_dimension(self._control_points)
+        spline_derivative_data, time_data = self.get_spline_derivative_data(number_of_data_points,derivative_order)
+        plt.figure(figure_title)
+        if dimension > 1:
+            for i in range(dimension):
+                spline_label = "Dimension " + str(i)
+                plt.plot(time_data, spline_derivative_data[i,:],label=spline_label)
+        else:
+            plt.plot(time_data, spline_derivative_data, label="Spline Derivative")
+        plt.xlabel('time')
+        plt.ylabel(str(derivative_order) + ' derivative')
+        plt.title(figure_title)
+        plt.legend()
+        plt.show()
