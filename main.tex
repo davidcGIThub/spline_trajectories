@@ -36,25 +36,99 @@ column 1/.style={nodes={fill=green!10}},
 \maketitle
 
 \section{Introduction}
-This paper gives an overview of B splines and practical application of uniform B-splines for trajectory generation
+This paper gives an overview of B splines and how to evaluate them and their derivatives.
 
-\section{Defining B-Splines}
-
-\subsection{Variables}
+\subsection{Nomenclature}
 
 
 \begin{itemize}
-  \item[] n \(=\) number of control points.
-  \item[] \(P_i = i^{th}\) control point.
-  \item[] k = order or degree of the polynomial.
-  \item[] m = number of knot points.
   \item[] d = space dimension of the B-spline curve
+  \item[] \textbf{k} = order or degree of the polynomial.
+  \item[] n \(=\) number of control points.
+  \item[] \textbf{P} = set of control points
+  \item[] \(P_i = i^{th}\) control point.
+  \item[] m = number of knot points.
+  \item[] \textbf{T} = set of knot points 
   \item[] \(t_i = i^{th}\) knot point.
   \item[] \(N_{i , k}\) = basis function for the \(i^{th}\) control point of a \textbf{k} degree B-spline.
   \item[] \(\alpha\) = spacing between uniform knot points
 \end{itemize}
 
-\subsection{Definition of a Uniform B-spline}
+\section{Defining B-Splines}
+
+\subsection{Open Uniform B-splines}
+
+\subsubsection{Definition}
+
+ A B-spline or \say{basis spline} is a piece-wise polynomial function of degree \textbf{k}. The formal definition for a b-spline is given by the following equation.
+ 
+  \begin{equation} \label{eq:B-Spline equation}
+      b(t) = \sum^{n-1}_{i=0} N_{i,\textbf{k}}(t) P_i
+  \end{equation}
+ 
+In words, equation (\ref{eq:B-Spline equation}) defines a b-spline by the summation of the product of some control points \(P_i\) and basis functions \(N_{i,\textbf{k}}(t)\). The basis functions are defined such that each basis function is non-zero only during certain intervals of the b-spline. If we were to evaluate b(t) analytically, we would get a piece-wise polynomial broken up into n-k sections.
+
+\begin{figure}[h]
+\begin{center}
+\includegraphics[scale=.55]{BsplineVsTime.png}
+\end{center}
+\caption{B-spline broken up into 5 sections or polynomials. \(t_k = 0\) and \(t_{n} = 5\)}
+\label{Fig:B-splines vs time}
+\end{figure}
+
+ \begin{equation}
+     b(t) = \begin{dcases} 
+                p_{\textbf{k}}(t) \quad \textbf{if} \quad t_{\textbf{k}} \leq t < t_{\textbf{k}+1} \\ 
+                p_{\textbf{k}+1}(t) \quad \textbf{if} \quad t_{\textbf{k}+1} \leq t < t_{\textbf{k}+2} \\
+                \quad ... \\
+                p_{n-\textbf{k}}(t)  \quad \textbf{if} \quad t_{n-1} \leq t < t_{n}
+            \end{dcases} 
+ \end{equation}
+
+Each \(p_j(t)\) is a \(k^{th}\) order polynomial of the form
+
+\begin{equation}
+    p_j(t) = c_{j,0} + c_{j,1} \; t + c_{j,2} \; t^{2} + ... + c_{j,k} \; t^{\textbf{k}}
+\end{equation}
+
+Also note that the index for the first polynomial starts with \textbf{k} to align the indexing with that of the first defined knot point. This is explained in section \ref{Control and Knot Points}.
+
+\subsubsection{Basis Functions} \label{sec:Basis Functions}
+
+ \begin{figure}[h]
+\begin{tabular}{ll}
+\includegraphics[scale=.422]{BasisFunctionsOrder2.png}
+\\
+\includegraphics[scale=.42]{BasisFunctionsOrder5.png}
+\end{tabular}
+\caption{$2^{nd}$ and $5^{th}$ order Basis functions with ten control points}
+\label{Fig:Open Basis Functions}
+\end{figure}
+
+  The basis function \(N_{i,\kappa(t)}\) is defined using the Cox-de Boor recursion formula as shown below.
+  
+  \begin{equation} \label{eq:Basis function equation}
+  N_{i,\kappa}(t) = \frac{t - t_i}{t_{i+\kappa} - t_i} N_{i,\kappa-1}(t) + \frac{t_{i+\kappa+1} - t}{t_{i+\kappa+1}-t_{i+1}} N_{i+1 , \kappa-1}(t)    
+  \end{equation}
+  
+    \begin{equation} \label{eq:Basis function equation zeros}
+      N_{i,0} =   \begin{cases} 1, &  \text{if } t_i \leq t < t_{i+1} \\
+                            0, & \text{otherwise} \end{cases}
+  \end{equation}
+  
+  If we were to evaluate a basis function analytically, we would get a polynomial of the following form.
+  
+  \begin{equation}
+      N_{i,\textbf{k}}(t) = c_{i,0} + c_{i,1} \; t + c_{i,2} \; t^{2} + ... + c_{i,3} \; t^{\textbf{k}}
+  \end{equation}
+  
+  A B-spline has a total of n basis functions. Each basis function influences k+1 intervals of the piece-wise polynomial. We can see this from Figure (\ref{Fig:Open Basis Functions}), which shows plots of the basis functions for a second and fifth order b-spline. These b-splines each have ten control points and each polynomial piece is defined over a one second interval. In the second order graph, each interval has three active basis functions, and in the fifth order graph, each interval has six active basis functions. In other words, each polynomial piece \(p(t)\) is defined by \textbf{k}+1 basis functions. 
+  
+\begin{equation}
+    p_j(t) = N_{j,\textbf{k}} P_{j} \; + \; N_{j-1,\textbf{k}} P_{j-1} \; + \; ... \; + \; N_{j-\textbf{k},\textbf{k}} P_{j-\textbf{k}}
+\end{equation}
+
+\subsubsection{Control and Knot Points} \label{Control and Knot Points}
 
 \begin{figure}[h]
 \begin{tabular}{ll}
@@ -66,34 +140,7 @@ This paper gives an overview of B splines and practical application of uniform B
 \label{Fig:Uniform B-splines}
 \end{figure}
 
- A B-spline or \say{basis spline} is a piece-wise polynomial function of degree \textbf{k}.
- 
-  \hspace{1cm}
-  
- \begin{equation}
-     b(t) = \begin{dcases} 
-                t^{\textbf{\textbf{k}}}c_{0,\textbf{k}} \; + \; t^{\textbf{k}-1}c_{0,\textbf{k}-1} \; + ... \quad t^{0}c_{0,0} \quad \textbf{if} \quad t_{\textbf{k}} \leq t < t_{\textbf{k}+1} \\ 
-                t^{\textbf{k}}c_{1,\textbf{k}} \; + \; t^{\textbf{k}-1}c_{1,\textbf{k}-1} \; + ... \quad t^{0}c_{1,0} \quad \textbf{if} \quad t_{\textbf{k}+1} \leq t < t_{\textbf{k}+2} \\
-                \quad ... \\
-                t^{\textbf{k}}c_{n-\textbf{k},\textbf{k}} \; + \; t^{\textbf{k}-1}c_{n-\textbf{k},\textbf{k}-1} \; + ... \quad t^{0}c_{n-\textbf{k},0} \quad \textbf{if} \quad t_{n-1} \leq t < t_{n}
-            \end{dcases} 
- \end{equation}
- 
- \hspace{1cm}
- 
- Where the "c" values are the coefficients of the polynomials. They are defined using control points. These shape the physical location of the curve, and are equivalent to \say{d} dimensional coordinates. The dimension of the spline is determined by the coordinate space that the control points reside in.
- 
- \begin{equation}
-     P_i \in \mathbb{R}^{d \times 1}
- \end{equation}
- 
- Or for a 3 dimensional spline we would have
- 
-  \begin{equation}
-     P_i = \begin{bmatrix} P_{x_i} \\ P_{y_i} \\ P_{z_i} \end{bmatrix}
- \end{equation}
-
-Since a B-spline is a piece-wise polynomial, knot points are required to define the time intervals for which each polynomial piece is defined. Knot points of a uniform B-spline must adhere to the following rules.
+The reason that we define a piece-wise polynomial in the B-spline form is so that we can take advantage of knot and control points. Knot points are required to define the time intervals for which each polynomial piece is defined. Knot points of a uniform B-spline must adhere to the following rules.
 
 \begin{equation}
     \begin{aligned}
@@ -131,91 +178,27 @@ where
     m = n + k + 1
 \end{equation}
 
-Figure (\ref{Fig:Uniform B-splines}) shows a \(2^{nd}\) and \(5^{th}\)-order uniform B-spline. We note that the B-spline is defined only between the knot points \(t_k\) and \(t_n\), where each interval \([t_i , t_{i+1})\) describes one of the polynomials that make up the B-spline. This means that there are \(n-k\) polynomials in the curve.
+Figure (\ref{Fig:Uniform B-splines}) shows a \(2^{nd}\) and \(5^{th}\) order uniform B-spline. We note that the B-spline is defined only between the knot points \(t_k\) and \(t_n\), where each interval \([t_i , t_{i+1})\) describes one of the polynomials that make up the B-spline. This gives us n-\textbf{k} knot point intervals in the curve.
 
 \begin{equation}
-    \Big[ \underbrace{t_0, \text{ } t_1,  \text{ } ... \text{ } t_{k-1}}_{\text{undefined}}, \text{ } t_k, \text{ } t_{k+1}, \text{ } ... \text{ } t_n, \text{ } \underbrace{t_{m-k}, \text{ } t_{m-k+1}, \text{ } ... \text{ } t_{m-1}}_{\text{undefined}} \Big]
+    \Big[ t_0, \; t_1,  \; ... \; t_{k-1} , \; \underbrace{t_k, \; t_{k+1}, \; ... \; t_n,}_{\text{defined}} \; t_{m-k}, \; t_{m-k+1}, \; ... \; t_{m-1} \Big]
 \end{equation}
 
-The function defining a uniform B-spline with the set of control points \textbf{P} and knot points \textbf{T} is as follows.
-  
-  \begin{equation} \label{eq:B-Spline equation}
-      b(t) = \sum^{n-1}_{i=0} N_{i,\textbf{k}}(t) P_i
-  \end{equation}
-  
- The basis function \(N_{i,\kappa(t)}\) is defined using the Cox-de Boor recursion formula as shown below.
-  
-  \begin{equation} \label{eq:Basis function equation}
-  N_{i,\kappa}(t) = \frac{t - t_i}{t_{i+\kappa} - t_i} N_{i,\kappa-1}(t) + \frac{t_{i+\kappa+1} - t}{t_{i+\kappa+1}-t_{i+1}} N_{i+1 , \kappa-1}(t)    
-  \end{equation}
-  
-    \begin{equation} \label{eq:Basis function equation zeros}
-      N_{i,0} =   \begin{cases} 1, &  \text{if } t_i \leq t < t_{i+1} \\
-                            0, & \text{otherwise} \end{cases}
-  \end{equation}
-  
- The tree diagram below shows a visual representation of the basis function.
+Control points shape the physical coordinates of the spline (see Figure \ref{Fig:Uniform B-splines}). The dimension or coordinate space that the control points reside in determine the dimension of the B-spline. For a d dimensional control point we have
  
-\hspace{1cm}
+ \begin{equation}
+     P_i \in \mathbb{R}^{d \times 1}
+ \end{equation}
+ 
+For a 3 dimensional spline we would have
+ 
+  \begin{equation}
+     P_i = \begin{bmatrix} P_{x_i} \\ P_{y_i} \\ P_{z_i} \end{bmatrix}
+ \end{equation}
+ 
+In section \ref{sec:Basis Functions}, we note that the number of control points is equal to the number of basis functions, and therefore each spline section \(p_j(t)\) is defined by \textbf{k}+1 control points. Specifically, the polynomial in the interval \([t_{i+\textbf{k}} , t_{i+\textbf{k}+1}]\) is effected by control points \([P_i , P_{i+1}, ... P_{i+\textbf{k}}]\). This means at least \textbf{k}+1 control points are needed to define a B-spline.
 
-\begin{forest}
-    [\(N_{i,\kappa}\)
-          [\(f_{i,\kappa}N_{i,\kappa-1}\)
-             [\(f_{i,\kappa-1}N_{i,\kappa-2}\)[...[\(f_{i,1}N_{i,0}\)][...]][...[...][...]]]
-             [\(d_{i,\kappa-1}N_{i+1,\kappa-2}\)[...[...][...]][...[...][...]]]]
-          [\(d_{i,\kappa}N_{i+1,\kappa-1}\)
-             [\(f_{i+1,\kappa-1}N_{i+1,\kappa-2}\)[...[...][...]][...[...][...]]]
-             [\(d_{i+1,\kappa-1}N_{i+2,\kappa-2}\)[...[...][...]][...[...][\(d_{i+k-1,1} N_{i+\kappa,0}\)]]]
-    ]]
-\end{forest}
-
-\hspace{1cm}
-
-where
-
-\begin{equation}
-    f_{i,\kappa} = \frac{t - t_i}{t_{i+\kappa}- t_i} \quad , \quad d_{i,\kappa} = \frac{t_{i+\kappa+1} - t}{t_{i+\kappa+1}-t_{i+1}}
-\end{equation}
-
-\hspace{1cm}
-
-If we extend this representation to equation (\ref{eq:B-Spline equation}), we can see which control points effect each particular knot point interval.
-
-\hspace{1cm}
-
-\begin{forest} baseline
-        [\(P_{i} N_{i,\textbf{k}}\)
-           [...
-              [\(\_\_\: N_{i,0}\)][...]]
-           [...
-              [...]
-              [\(\_\_\:N_{i+\textbf{k},0}\),circle,red,draw
-        ]]]
-        \end{forest}
-        + 
-        \begin{forest} baseline
-        [\(P_{i+1} N_{i+1,\textbf{k}}\)
-           [...
-              [\(\_\_\:N_{i+1,0}\)][...]]
-           [...
-              [\(\_\_\:N_{i+\textbf{k},0}\),circle,red,draw]
-              [\(\_\_\:N_{i+\textbf{k}+1,0}\)
-        ]]]
-        \end{forest} + ... \begin{forest} baseline
-        [\(P_{i+\textbf{k}} N_{i+\textbf{k},\textbf{k}}\)
-           [...
-              [\(\_\_\:N_{i+\textbf{k},0}\),circle,red,draw][...]]
-           [...
-              [...]
-              [\(\_\_\:N_{i+2\textbf{k},0}\)
-        ]]]
-\end{forest}
-
-\hspace{1cm}
-
-We can see that the polynomial in the interval \([t_{i+\textbf{k}} , t_{i+\textbf{k}+1}]\) is effected by control points \([P_i , P_{i+1}, ... P_{i+\textbf{k}}]\). This means that each knot point interval is defined by \textbf{k}+1 control points, and at least \textbf{k}+1  control points are needed to define a B-spline.
-
-\subsection{Definition of Clamped Uniform B-spline}
+\subsection{Clamped Uniform B-splines}
 
 \begin{figure}[h]
 \begin{tabular}{ll}
@@ -242,7 +225,7 @@ A clamped B-spline, or open uniform B-spline is a one that reaches its first and
 
 The B-spline equations remains the same.
 
-  \begin{equation} \label{eq:B-Spline equation}
+  \begin{equation}
       b(t) = \sum^{n-1}_{i=0} N_{i,\textbf{k}}(t) P_i
   \end{equation}
 
@@ -281,17 +264,29 @@ equation (\ref{eq:B-Spline equation}) only needs to be computed for knot points 
 \end{equation}
 
 where a graphical representation of \(N_{i,\textbf{k}}\) is shown below.
+ 
+\hspace{1cm}
 
-\begin{equation} \begin{forest} baseline
-    [\( N_{i,\textbf{k}}\)
-          [\(f_{i,\textbf{k}}N_{i,\textbf{k}-1}\)
-             [...[\(f_{i,1}N_{i,0}\)][...]]
-             [...[...][...]]]
-          [\(d_{i,\textbf{k}}N_{i+1,\textbf{k}-1}\)
-             [...[...][...]]
-             [...[...][\(d_{i+\textbf{k}-1,1} N_{i+\textbf{k},0}\)]]
+\begin{forest}
+    [\(N_{i,\kappa}\)
+          [\(f_{i,\kappa}N_{i,\kappa-1}\)
+             [\(f_{i,\kappa-1}N_{i,\kappa-2}\)[...[\(f_{i,1}N_{i,0}\)][...]][...[...][...]]]
+             [\(d_{i,\kappa-1}N_{i+1,\kappa-2}\)[...[...][...]][...[...][...]]]]
+          [\(d_{i,\kappa}N_{i+1,\kappa-1}\)
+             [\(f_{i+1,\kappa-1}N_{i+1,\kappa-2}\)[...[...][...]][...[...][...]]]
+             [\(d_{i+1,\kappa-1}N_{i+2,\kappa-2}\)[...[...][...]][...[...][\(d_{i+k-1,1} N_{i+\kappa,0}\)]]]
     ]]
-\end{forest} \end{equation}
+\end{forest}
+
+\hspace{1cm}
+
+where
+
+\begin{equation}
+    f_{i,\kappa} = \frac{t - t_i}{t_{i+\kappa}- t_i} \quad , \quad d_{i,\kappa} = \frac{t_{i+\kappa+1} - t}{t_{i+\kappa+1}-t_{i+1}}
+\end{equation}
+
+\hspace{1cm}
 
 Table ( ) shows the psuedocode for this implementation.
 

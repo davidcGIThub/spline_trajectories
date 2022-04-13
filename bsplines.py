@@ -147,7 +147,7 @@ class BsplineEvaluation:
         returns the knot points that are defined along the curve
         '''
         number_of_control_points = count_number_of_control_points(self._control_points)
-        defined_knot_points = self._knot_points[self._order:number_of_control_points]
+        defined_knot_points = self._knot_points[self._order:number_of_control_points+1]
         return defined_knot_points
 
     def get_knot_points(self):
@@ -280,15 +280,16 @@ class BsplineEvaluation:
             plt.show()
 
     def plot_basis_functions(self, number_of_data_points):
-        plt.figure("Basis Functions")
+        figure_title = "Basis Functions - Order " + str(self._order)
+        plt.figure(figure_title)
         basis_function_data, time_data = self.get_basis_function_data(number_of_data_points)
         for b in range(count_number_of_control_points(self._control_points)):
-            basis_label = "Function " + str(b)
+            basis_label = "N" + str(b) + "," + str(self._order) + "(t)"
             basis_function  = basis_function_data[b,:]
             plt.plot(time_data, basis_function, label=basis_label)
         plt.xlabel('time')
         plt.ylabel('N(t)')
-        plt.title("Basis Functions")
+        plt.title(figure_title)
         plt.legend()
         plt.show()
 
@@ -307,4 +308,13 @@ class BsplineEvaluation:
         plt.ylabel(str(derivative_order) + ' derivative')
         plt.title(figure_title)
         plt.legend()
+        plt.show()
+
+    def plot_curvature(self, number_of_data_points):
+        spline_curvature_data, time_data = self.get_spline_curvature_data(number_of_data_points)
+        plt.figure("Curvature")
+        plt.plot(time_data, spline_curvature_data)
+        plt.xlabel('time')
+        plt.ylabel('curvature')
+        plt.title("Curvature")
         plt.show()
