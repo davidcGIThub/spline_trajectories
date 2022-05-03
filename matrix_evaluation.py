@@ -122,62 +122,111 @@ def __get_5_order_matrix():
 def __get_clamped_2_order_matrix(initial_control_point_index, order, knot_points):
     i_t = initial_control_point_index + order
     n = calculate_number_of_control_points(order, knot_points)
-    M = __get_2_order_matrix()
-    if i_t == 2 and knot_points[2] < knot_points[n-1]:
-        M = .5*np.array([[2,-4,2],
-                        [-3,4,0],
-                        [1,0,0]])
-    elif i_t == n - 1 and knot_points[2] < knot_points[n-1]:
-        M = .5*np.array([[1,-2,1],
-                        [-3,2,1],
-                        [2,0,0]])
-    elif i_t == 2 and knot_points[2] == knot_points[n-1] :
+    M = np.array([])
+    if n == 3:
         M = 0.5*np.array([[2,-4,2],
                             [-4,4,0],
                             [2,0,0]])
+    elif n >= 4:
+        if i_t == 2 and knot_points[2] < knot_points[n-1]:
+            M = .5*np.array([[2,-4,2],
+                            [-3,4,0],
+                            [1,0,0]])
+        elif i_t == n - 1 and knot_points[2] < knot_points[n-1]:
+            M = .5*np.array([[1,-2,1],
+                            [-3,2,1],
+                            [2,0,0]])
+        else:
+            M = __get_2_order_matrix()
     return M
 
 def __get_clamped_3_order_matrix(initial_control_point_index, order, knot_points):
     i_t = initial_control_point_index + order
     n = calculate_number_of_control_points(order, knot_points)
-    M = __get_3_order_matrix()
-    if i_t == 3 and knot_points[3] < knot_points[n-1]:
-        M = np.array([[-12 ,  36 , -36 , 12],
-                    [ 21 , -54 ,  36 , 0],
-                    [-11 ,  18 ,  0  , 0],
-                    [ 2  ,  0  ,  0  , 0]])/12.0
-    elif i_t == 4 and knot_points[4] < knot_points[n-2]:
-        M = np.array([[-3 ,  9 , -9 , 3],
+    M = np.array([])
+    if n == 4:
+        M = np.array([[-12 , 36 , -36 , 12],
+            [36 , -72 , 36 , 0],
+            [-36 , 36 , 0 , 0],
+            [12 , 0 , 0 , 0]])/12
+    elif n == 5:
+        if i_t == 3:
+            M = np.array([[-12 ,  36 , -36 , 12],
+                          [ 21 , -54 ,  36 , 0],
+                          [-12 ,  18 ,  0  , 0],
+                          [ 3  ,  0  ,  0  , 0]])/12.0
+        elif i_t == n - 1:
+            M = np.array([[-3  , 9   ,  -9 , 3],
+                          [12,  -18   ,  0 ,  6],
+                          [-21,  9   ,  9 ,  3],
+                          [12 ,  0   ,  0 ,  0]])/12.0
+    elif n >= 6:
+        if i_t == 3:
+            M = np.array([[-12 ,  36 , -36 , 12],
+                [ 21 , -54 ,  36 , 0],
+                [-11 ,  18 ,  0  , 0],
+                [ 2  ,  0  ,  0  , 0]])/12.0
+        elif i_t == 4 and knot_points[4] < knot_points[n-2]:
+            M = np.array([[-3 ,  9 , -9 , 3],
                     [ 7 , -15 ,  3 , 7],
                     [-6 ,  6 , 6 , 2],
                     [ 2 ,  0 ,  0 , 0]])/12
-
-    elif i_t == n - 2 and knot_points[4] < knot_points[n-2]:
-        M = np.array([[-2  , 6   ,  -6 , 2],
+        elif i_t == n-2 and knot_points[4] < knot_points[n-2]:
+            M = np.array([[-2  , 6   ,  -6 , 2],
                     [6 , -12  , 0 ,  8],
                     [ -7,    6 ,  6 , 2 ],
                     [ 3,  0   , 0  , 0]])/12
-    elif i_t == n - 1 and knot_points[3] < knot_points[n-1]:
-        M = np.array([[-2  , 6   ,  -6 , 2],
+        elif i_t == n-1:
+            M = np.array([[-2  , 6   ,  -6 , 2],
                     [11 , -15  , -3 ,  7],
                     [-21,  9   ,  9 ,  3],
                     [12 ,  0   ,  0 ,  0]])/12.0
-    elif i_t == 4 and knot_points[4] == knot_points[n-2]:
-        M = np.array([[-3 , 9 , -9 , 3],
-            [7, -15 , 3 , 7],
-            [-7 , 6 , 6 , 2],
-            [3 , 0 , 0 , 0]])/12
-    elif i_t == 3 and knot_points[3] == knot_points[n-1]:
-            M = np.array([[-12 , 36 , -36 , 12],
-                [36 , -72 , 36 , 0],
-                [-36 , 36 , 0 , 0],
-                [12 , 0 , 0 , 0]])/12
+        elif i_t == 4 and knot_points[4] == knot_points[n-2]:
+            M = np.array([[-3 , 9 , -9 , 3],
+                    [7, -15 , 3 , 7],
+                    [-7 , 6 , 6 , 2],
+                    [3 , 0 , 0 , 0]])/12.0
+        else:
+            M = __get_3_order_matrix()
     return M
 
-def __get_clamped_4_order_matrix(initial_control_point_index):
+def __get_clamped_4_order_matrix(initial_control_point_index, order, knot_points):
+    i_t = initial_control_point_index + order
+    n = calculate_number_of_control_points(order, knot_points)
     M = __get_4_order_matrix()
-    # TODOD
+    if i_t == 4 and knot_points[4] == knot_points[n-1]:
+        M = np.array([[1  ,  -4 , 6   ,-4 , 1],
+                     [ -4 ,  12 , -12 , 4 , 0],
+                     [  6 , -12 ,  6  , 0 , 0],
+                     [ -4 ,  4  , 0   , 0 , 0],
+                     [1   ,   0 ,   0 , 0 , 0]])
+    # elif i_t == 4 and knot_points[4] < knot_points[n-2]:
+    #     M = np.array([[-3 ,  9 , -9 , 3],
+    #                 [ 7 , -15 ,  3 , 7],
+    #                 [-6 ,  6 , 6 , 2],
+    #                 [ 2 ,  0 ,  0 , 0]])/12
+    # elif i_t == n - 2 and knot_points[4] < knot_points[n-2]:
+    #     M = np.array([[-2  , 6   ,  -6 , 2],
+    #                 [6 , -12  , 0 ,  8],
+    #                 [ -7,    6 ,  6 , 2 ],
+    #                 [ 3,  0   , 0  , 0]])/12
+    # elif i_t == n - 1 and knot_points[3] < knot_points[n-1]:
+    #     M = np.array([[-2  , 6   ,  -6 , 2],
+    #                 [11 , -15  , -3 ,  7],
+    #                 [-21,  9   ,  9 ,  3],
+    #                 [12 ,  0   ,  0 ,  0]])/12.0
+    # elif i_t == 4 and knot_points[4] == knot_points[n-2]:
+    #     M = np.array([[-3 , 9 , -9 , 3],
+    #         [7, -15 , 3 , 7],
+    #         [-7 , 6 , 6 , 2],
+    #         [3 , 0 , 0 , 0]])/12
+    # elif i_t == 3 and knot_points[3] == knot_points[n-1]:
+    #         M = np.array([[-12 , 36 , -36 , 12],
+    #             [36 , -72 , 36 , 0],
+    #             [-36 , 36 , 0 , 0],
+    #             [12 , 0 , 0 , 0]])/12
     return M
+
 
 def __get_clamped_5_order_matrix(initial_control_point_index):
     M = __get_5_order_matrix()

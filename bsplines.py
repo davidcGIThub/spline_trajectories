@@ -101,7 +101,7 @@ class BsplineEvaluation:
         """
         This function evaluates the B spline at the given time
         """
-        if self._order > 5 or (self._clamped and self._order > 3):
+        if self._order > 5:
             spline_at_time_t = table_bspline_evaluation(time, self._control_points, self._knot_points, self._clamped)
         else:
             spline_at_time_t = matrix_bspline_evaluation(time, self._scale_factor, self._control_points, self._knot_points, self._clamped)
@@ -111,7 +111,7 @@ class BsplineEvaluation:
         '''
         This function evaluates the rth derivative of the spline at time t
         '''
-        if self._order > 5 or (self._order > 3 and self._clamped):
+        if self._order > 5:
             derivative_at_time_t = derivative_table_bspline_evaluation(time, derivative_order, self._control_points, self._knot_points, self._clamped)       
         else:
             derivative_at_time_t = derivative_matrix_bspline_evaluation(time, derivative_order, self._scale_factor, self._control_points, self._knot_points, self._clamped)
@@ -290,7 +290,7 @@ class BsplineEvaluation:
         plt.xlabel('time')
         plt.ylabel('N(t)')
         plt.title(figure_title)
-        plt.legend()
+        plt.legend(loc="center")
         plt.show()
 
     def plot_derivative(self, number_of_data_points, derivative_order):
