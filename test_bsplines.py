@@ -13,11 +13,12 @@ from bsplines import BsplineEvaluation
 # control_points = np.array([-3,-4,-2,0]) # 4
 # control_points = np.array([-3,-4,-2,0,-3]) # 5
 # control_points = np.array([-3,-4,-2,0,-3, 0]) # 6
-control_points = np.array([-3,-4,-2,0,-3, 0, 2]) # 7
+# control_points = np.array([-3,-4,-2,0,-3, 0, 2]) # 7
 # control_points = np.array([-3,-4,-2,0,-3, 0, 2, 3.5]) # 8
 # control_points = np.array([-3,-4,-2,0,-3, 0, 2, 3.5, 3]) # 9
 # control_points = np.array([-3,-4,-2,0,-3, 0, 2, 3.5, 3, 2]) # 10
-# control_points = np.array([-3,-4,-2,0,-3, 0, 2, 3.5, 3, 2, 1]) # 11
+control_points = np.array([-3,-4,-2,0,-3, 0, 2, 3.5, 3, 2, 1]) # 11
+# control_points = np.array([-3,-4,-2,0,-3, 0, 2, 3.5, 3, 2, 1, 5]) # 12
  
 
 if len(control_points) == 1:
