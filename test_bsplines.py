@@ -11,9 +11,9 @@ from bsplines import BsplineEvaluation
 # control_points = np.random.randint(10, size=(random.randint(1, 3),13)) # random
 # control_points = np.array([-3,-4,-2]) # 3
 # control_points = np.array([-3,-4,-2,0]) # 4
-control_points = np.array([-3,-4,-2,0,-3]) # 5
+# control_points = np.array([-3,-4,-2,0,-3]) # 5
 # control_points = np.array([-3,-4,-2,0,-3, 0]) # 6
-# control_points = np.array([-3,-4,-2,0,-3, 0, 2]) # 7
+control_points = np.array([-3,-4,-2,0,-3, 0, 2]) # 7
 # control_points = np.array([-3,-4,-2,0,-3, 0, 2, 3.5]) # 8
 # control_points = np.array([-3,-4,-2,0,-3, 0, 2, 3.5, 3]) # 9
 # control_points = np.array([-3,-4,-2,0,-3, 0, 2, 3.5, 3, 2]) # 10

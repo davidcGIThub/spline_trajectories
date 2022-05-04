@@ -193,13 +193,47 @@ def __get_clamped_3_order_matrix(initial_control_point_index, order, knot_points
 def __get_clamped_4_order_matrix(initial_control_point_index, order, knot_points):
     i_t = initial_control_point_index + order
     n = calculate_number_of_control_points(order, knot_points)
-    M = __get_4_order_matrix()
-    if i_t == 4 and knot_points[4] == knot_points[n-1]:
+    M = np.array([])
+    if n == 5:
         M = np.array([[1  ,  -4 , 6   ,-4 , 1],
                      [ -4 ,  12 , -12 , 4 , 0],
                      [  6 , -12 ,  6  , 0 , 0],
                      [ -4 ,  4  , 0   , 0 , 0],
                      [1   ,   0 ,   0 , 0 , 0]])
+    elif n==6:
+        if i_t == 4:
+            M = np.array([[8  , -32, 48 , -32, 8],
+                        [-15, 56 , -72, 32 , 0],
+                        [11 , -32, 24 , 0 , 0],
+                        [5 , 8 , 0 , 0 , 0],
+                        [1 , 0 , 0 , 0 , 0]])/8.0
+        elif i_t == n-1:
+            M = np.array([[1  , -4, 6 , -4, 1],
+                        [-5, 12 , -6, -4 , 3],
+                        [11 , -12, -6 , 4 , 3],
+                        [-15 , 4 , 6 , 4 , 1],
+                        [8 , 0 , 0 , 0 , 0]])/8.0
+    elif n>=7:
+        if i_t == 4:
+            M = np.array([[72, -288, 432, -288, 72],
+                        [-135, 504, -648, 288, 0],
+                        [85, -264, 216, 0 , 0],
+                        [-26, 48, 0, 0 ,0],
+                        [4, 0 , 0 , 0, 0]])/72.0
+        elif i_t == 5 and knot_points[5] == knot_points[n-2]:
+            M = np.array([[9, -36, 54, -36, 9],
+                        [-23, 76, -66, -20, 37],
+                        [28, -56, -12, 40 , 22],
+                        [-23, 16, 24, 16 ,4],
+                        [9, 0 , 0 , 0, 0]])/72.0
+        elif i_t == n-1:
+            M = np.array([[4 , -16 , 24 , -16 , 4],
+                          [-26 , 56 , -12 , -40 , 22],
+                          [85 , -76 , -66 , 20 , 37],
+                          [-135 , 36 , 54 , 36 , 9],
+                          [72 , 0 , 0 , 0 , 0]])/72
+    else:
+        M = __get_4_order_matrix()
     # elif i_t == 4 and knot_points[4] < knot_points[n-2]:
     #     M = np.array([[-3 ,  9 , -9 , 3],
     #                 [ 7 , -15 ,  3 , 7],
