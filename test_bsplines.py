@@ -16,16 +16,19 @@ from bsplines import BsplineEvaluation
 # control_points = np.array([-3,-4,-2,0,-3, 0, 2]) # 7
 # control_points = np.array([-3,-4,-2,0,-3, 0, 2, 3.5]) # 8
 # control_points = np.array([-3,-4,-2,0,-3, 0, 2, 3.5, 3]) # 9
-# control_points = np.array([-3,-4,-2,0,-3, 0, 2, 3.5, 3, 2]) # 10
-control_points = np.array([-3,-4,-2,0,-3, 0, 2, 3.5, 3, 2, 1]) # 11
+control_points = np.array([-3,-4,-2,0,-3, 0, 2, 3.5, 3, 2]) # 10
+# control_points = np.array([-3,-4,-2,0,-3, 0, 2, 3.5, 3, 2, 1]) # 11
 # control_points = np.array([-3,-4,-2,0,-3, 0, 2, 3.5, 3, 2, 1, 5]) # 12
+# control_points = np.array([-3,-4,-2,0,-3, 0, 2, 3.5, 3, 2, 1, 5, 7]) # 13
+# control_points = np.array([-3,-4,-2,0,-3, 0, 2, 3.5, 3, 2, 1, 5, 7, 4]) # 14
+# control_points = np.array([-3,-4,-2,0,-3, 0, 2, 3.5, 3, 2, 1, 5, 7, 4, 1]) # 15
  
 
 if len(control_points) == 1:
     control_points = control_points.flatten()
 
 ### Parameters
-order = 4
+order = 5
 start_time = 0
 scale_factor = 1
 derivative_order = 3
