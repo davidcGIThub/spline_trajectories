@@ -1,8 +1,20 @@
-# spline_trajectories
-This repository contains code for trajectory generation using splines
+# Bspline_Generator
+B-Spline Generator class
 
-TODO
-1. Finish matrix evaluation of clamped bsplines for up to 5th order
-2. Add plotter functions
-3. Add Basis Function plotter
-4. Add options for constraints and optimizations
+# Dependencies
+Install the following
+
+pip3 install numpy
+pip3 install matplotlib
+
+# Installation 
+navigate to the working folder
+
+/bspline_generator
+
+then run the following command
+
+pip install .
+
+# Tutorial
+Run the test_bsplines.py file to see how to use the class

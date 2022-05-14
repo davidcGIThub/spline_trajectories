@@ -1,5 +1,5 @@
 import numpy as np
-from helper_functions import count_number_of_control_points, find_preceding_knot_index,\
+from bsplinegenerator.helper_functions import count_number_of_control_points, find_preceding_knot_index,\
     calculate_number_of_control_points, get_dimension
     
 def matrix_bspline_evaluation(time, scale_factor, control_points, knot_points, clamped = False):
@@ -16,7 +16,7 @@ def matrix_bspline_evaluation(time, scale_factor, control_points, knot_points, c
     spline_at_time_t = np.zeros((dimension,1))
     i_p = initial_control_point_index
     tau = time - preceding_knot_point
-    M = __get_M_matrix(i_p, order, knot_points, clamped)
+    M = get_M_matrix(i_p, order, knot_points, clamped)
     if dimension > 1:
         P = np.zeros((dimension,order+1))
     else:
@@ -40,7 +40,7 @@ def derivative_matrix_bspline_evaluation(time, rth_derivative, scale_factor, con
     initial_control_point_index = preceding_knot_index - order
     dimension = get_dimension(control_points)
     i_p = initial_control_point_index
-    M = __get_M_matrix(i_p, order, knot_points, clamped)
+    M = get_M_matrix(i_p, order, knot_points, clamped)
     tau = (time - preceding_knot_point)
     if dimension > 1:
         P = np.zeros((dimension,order+1))
@@ -57,7 +57,7 @@ def derivative_matrix_bspline_evaluation(time, rth_derivative, scale_factor, con
     spline_derivative_at_time_t = np.dot(P, np.dot(M,T))
     return spline_derivative_at_time_t
 
-def __get_M_matrix(initial_control_point_index, order, knot_points, clamped):
+def get_M_matrix(initial_control_point_index, order, knot_points, clamped):
     if order > 5:
         print("Error: Cannot compute higher than 5th order matrix evaluation")
         return None
@@ -206,7 +206,7 @@ def __get_clamped_4_order_matrix(initial_control_point_index, order, knot_points
             M = np.array([[8  , -32, 48 , -32, 8],
                         [-15, 56 , -72, 32 , 0],
                         [11 , -32, 24 , 0 , 0],
-                        [5 , 8 , 0 , 0 , 0],
+                        [-5 , 8 , 0 , 0 , 0],
                         [1 , 0 , 0 , 0 , 0]])/8.0
         elif i_t == 5:
             M = np.array([[1  , -4, 6 , -4, 1],
@@ -317,7 +317,7 @@ def __get_clamped_5_order_matrix(initial_control_point_index, order, knot_points
         elif i_t == 6:
             M = np.array([[-1, 5, -10, 10, -5, 1],
                       [6, -20 , 20 , 0, -10, 4],
-                      [16, 30 , 0, -20, 0 , 6],
+                      [-16, 30 , 0, -20, 0 , 6],
                       [26, -20, -20, 0 , 10 , 4],
                       [-31, 5 , 10 , 10 , 5, 1],
                       [16, 0 , 0 , 0 , 0 , 0]])/16
@@ -332,7 +332,7 @@ def __get_clamped_5_order_matrix(initial_control_point_index, order, knot_points
         elif i_t == 6:
             M = np.array([[-27, 135, -270, 270, -135, 27],
                           [73, -325, 490, -170, -235, 175],
-                          [102, 330, -180, 300, 150 , 162],
+                          [-102, 330, -180, -300, 150 , 162],
                           [102, -180, -120, 120 , 180, 60],
                           [-73, 40, 80 , 80 , 40 , 8],
                           [27, 0 , 0 , 0 , 0 , 0]])/432.0
@@ -349,7 +349,7 @@ def __get_clamped_5_order_matrix(initial_control_point_index, order, knot_points
                           [1674, -8100, 15120, -12960, 4320, 0],
                           [-1150, 5100, -7920, 4320, 0, 0],
                           [415, -1500, 1440, 0 , 0 , 0],
-                          [180, -84, 0 , 0 , 0 , 0],
+                          [-84, 180, 0 , 0 , 0 , 0],
                           [9 , 0 , 0 , 0 , 0 , 0]])/864
         elif i_t == 6:
             M = np.array([[-54, 270, -540, 540, -270, 54],
@@ -428,7 +428,7 @@ def __get_clamped_5_order_matrix(initial_control_point_index, order, knot_points
             elif knot_points[8] == knot_points[n-3]:
                 M = np.array([[-45, 225, -450, 450, -225, 45],
                             [189, -765, 810, 630, -1755, 927],
-                            [-360, 1080, -2160, 2376, 0, 0],
+                            [-360, 1080, 0, -2160, 0, 2376],
                             [411, -765, -810, 630, 1755, 927],
                             [-275, 225, 450, 450, 225, 45],
                             [80, 0 , 0 , 0 , 0 , 0]])/4320  

@@ -1,21 +1,21 @@
 """
-This module contains code to evaluate an open uniform b spline 
+This module contains code to evaluate an uniform b splines 
 using the matrix method and the cox-de-boor table method for splines of order 
 higher than the 5th degree. This also evaluates the derivatives of the B-spline
 """
 
 import numpy as np 
 import matplotlib.pyplot as plt
-from matrix_evaluation import matrix_bspline_evaluation, derivative_matrix_bspline_evaluation
-from table_evaluation import table_bspline_evaluation, derivative_table_bspline_evaluation, \
+from bsplinegenerator.matrix_evaluation import matrix_bspline_evaluation, derivative_matrix_bspline_evaluation
+from bsplinegenerator.table_evaluation import table_bspline_evaluation, derivative_table_bspline_evaluation, \
     cox_de_boor_table_basis_function
-from helper_functions import count_number_of_control_points, get_dimension, find_preceding_knot_index
+from bsplinegenerator.helper_functions import count_number_of_control_points, get_dimension, find_preceding_knot_index
 class BsplineEvaluation:
     """
-    This class contains contains code to evaluate an open uniform b spline 
+    This class contains contains code to evaluate uniform b spline 
     using the matrix method and the cox-de-boor table method for splines of order
-    higher than the 5th degree. This also uses the table method for clamped B-splines
-    of order higher than 3. This also evaluates the derivatives of the B-spline.
+    higher than the 5th degree. This also uses the table method for B-splines
+    of order higher than 5. This also evaluates the derivatives of the B-spline.
     """
 
     def __init__(self, control_points, order, start_time, scale_factor=1, clamped=False):
