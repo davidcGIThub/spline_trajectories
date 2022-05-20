@@ -2,14 +2,14 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from bsplinegenerator.bsplines import BsplineEvaluation
-from trajectorygenerator.trajectory_generator import TrajectoryGenerator
+from trajectorygenerator.constrained_trajectory import ConstrainedTrajectory, ObjectiveType
 
 order = 5
 dimension = 2
 # trajectory_gen = ConstrainedTrajectory(ObjectiveType.MINIMIZE_SNAP, dimension)
 # trajectory_gen = ConstrainedTrajectory(ObjectiveType.MINIMIZE_TIME_AND_DISTANCE, dimension)
 # trajectory_gen = ConstrainedTrajectory(ObjectiveType.MINIMIZE_ACCELERATION, dimension)
-trajectory_gen = TrajectoryGenerator()
+trajectory_gen = ConstrainedTrajectory(ObjectiveType.MINIMIZE_VELOCITY, dimension)
 waypoints = np.array([[1,4,9],[2,4,5]])
 start_time = 0
 control_points, scale_factor = trajectory_gen.generate_trajectory(waypoints)
