@@ -6,10 +6,10 @@ from trajectorygenerator.constrained_trajectory import ConstrainedTrajectory, Ob
 
 order = 5
 dimension = 2
-# trajectory_gen = ConstrainedTrajectory(ObjectiveType.MINIMIZE_SNAP, dimension)
+trajectory_gen = ConstrainedTrajectory(ObjectiveType.MINIMIZE_SNAP, dimension)
 # trajectory_gen = ConstrainedTrajectory(ObjectiveType.MINIMIZE_TIME_AND_DISTANCE, dimension)
 # trajectory_gen = ConstrainedTrajectory(ObjectiveType.MINIMIZE_ACCELERATION, dimension)
-trajectory_gen = ConstrainedTrajectory(ObjectiveType.MINIMIZE_VELOCITY, dimension)
+# trajectory_gen = ConstrainedTrajectory(ObjectiveType.MINIMIZE_VELOCITY, dimension)
 waypoints = np.array([[1,4,9],[2,4,5]])
 start_time = 0
 control_points, scale_factor = trajectory_gen.generate_trajectory(waypoints)
@@ -31,4 +31,4 @@ plt.title("Optimized 5th order B-Spline")
 plt.legend()
 plt.show()
 
-bspline.plot_derivative(number_data_points, 1)
+bspline.plot_derivative(number_data_points, 4)

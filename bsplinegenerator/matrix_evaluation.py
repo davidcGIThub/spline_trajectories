@@ -15,21 +15,17 @@ def matrix_bspline_evaluation(time, scale_factor, control_points, knot_points, c
     dimension = get_dimension(control_points)
     spline_at_time_t = np.zeros((dimension,1))
     i_p = initial_control_point_index
-    tau = time - preceding_knot_point
     M = get_M_matrix(i_p, order, knot_points, clamped)
     if dimension > 1:
         P = np.zeros((dimension,order+1))
     else:
         P = np.zeros(order+1)
-    T = np.ones((order+1,1))
     for i in range(order+1):
-        y = i
-        kappa = i
         if dimension > 1:
-            P[:,y] = control_points[:,i_p+y]
+            P[:,i] = control_points[:,i_p+i]
         else:
-            P[y] = control_points[i_p+y]
-        T[kappa,0] = (tau/scale_factor)**(order-kappa)
+            P[i] = control_points[i_p+i]
+    T = get_T_vector(order,time,preceding_knot_point,0,scale_factor)
     spline_at_time_t = np.dot(P, np.dot(M,T))
     return spline_at_time_t
 
@@ -41,7 +37,6 @@ def derivative_matrix_bspline_evaluation(time, rth_derivative, scale_factor, con
     dimension = get_dimension(control_points)
     i_p = initial_control_point_index
     M = get_M_matrix(i_p, order, knot_points, clamped)
-    tau = (time - preceding_knot_point)
     if dimension > 1:
         P = np.zeros((dimension,order+1))
     else:
@@ -51,9 +46,7 @@ def derivative_matrix_bspline_evaluation(time, rth_derivative, scale_factor, con
             P[:,y] = control_points[:,i_p+y]
         else:
             P[y] = control_points[i_p+y]
-    T = np.zeros((order+1,1))
-    for i in range(order-rth_derivative+1):
-        T[i,0] = (tau**(order-rth_derivative-i)*np.math.factorial(order-i)) /  (scale_factor**(order-i)*np.math.factorial(order-i-rth_derivative))
+    T = get_T_vector(order,time,preceding_knot_point,rth_derivative,scale_factor)
     spline_derivative_at_time_t = np.dot(P, np.dot(M,T))
     return spline_derivative_at_time_t
 
@@ -83,6 +76,16 @@ def get_M_matrix(initial_control_point_index, order, knot_points, clamped):
             M = __get_5_order_matrix()
 
     return M
+
+def get_T_vector(order,t,tj,rth_derivative,scale_factor):
+    T = np.ones((order+1,1))
+    t_tj = t-tj
+    for i in range(order+1):
+        if i > order-rth_derivative:
+            T[i,0] = 0
+        else:
+            T[i,0] = (t_tj**(order-rth_derivative-i))/(scale_factor**(order-i)) * np.math.factorial(order-i)/np.math.factorial(order-i-rth_derivative)
+    return T
 
 def __get_1_order_matrix():
     M = np.array([[-1,1],

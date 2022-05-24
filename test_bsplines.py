@@ -24,7 +24,7 @@ if len(control_points) == 1:
     control_points = control_points.flatten()
 
 ### Parameters
-order =5
+order = 5
 start_time = 0
 scale_factor = 1
 derivative_order = 1
@@ -56,9 +56,9 @@ print("number_of_basis_functions: " , len(basis_function_data))
 
 # Plot Spline Data
 bspline.plot_spline(number_data_points)
-# bspline.plot_spline_vs_time(number_data_points)
-# bspline.plot_basis_functions(number_data_points)
-# bspline.plot_derivative(number_data_points, derivative_order)
+bspline.plot_spline_vs_time(number_data_points)
+bspline.plot_basis_functions(number_data_points)
+bspline.plot_derivative(number_data_points, derivative_order)
 bspline.plot_curvature(number_data_points)
 
 

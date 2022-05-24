@@ -176,6 +176,8 @@ class ConstrainedTrajectory:
         Gamma_f = np.ones((self._order+1,1))
         M_Gamma_0 = np.dot(M,Gamma_0)
         M_Gamma_f = np.dot(M,Gamma_f)
+        print("M_Gamma_0 :" , M_Gamma_0)
+        print("M_Gamma_f :" , M_Gamma_f)
         number_of_waypoints = np.shape(waypoints)[1]
         correlation_map = self.__correlate_waypoints_to_control_points(waypoints,number_of_control_points)
         constraint_sub_matrix = np.zeros((number_of_waypoints , number_of_control_points))
@@ -184,7 +186,9 @@ class ConstrainedTrajectory:
             constraint_sub_matrix[i,control_point_index:control_point_index+self._order+1][:,None] = M_Gamma_0
             if i == (number_of_waypoints-1):
                 constraint_sub_matrix[i,control_point_index:control_point_index+self._order+1][:,None] = M_Gamma_f
+        print("constraint_sub_matrix :" , constraint_sub_matrix)
         constraint_matrix_top = np.concatenate((constraint_sub_matrix,np.zeros((number_of_waypoints , number_of_control_points))),0)
+        print("constraint_matrix_top :" , constraint_matrix_top)
         constraint_matrix_bottom = np.concatenate((np.zeros((number_of_waypoints , number_of_control_points)),constraint_sub_matrix),0)
         constraint_matrix = np.concatenate((constraint_matrix_top,constraint_matrix_bottom),1)
         print("number_of_waypoints: ", number_of_waypoints)
