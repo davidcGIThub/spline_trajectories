@@ -185,6 +185,18 @@ class BsplineEvaluation:
         time_array = np.linspace(self._start_time, self._end_time, number_of_control_points)
         return time_array
 
+    def get_start_time(self):
+        '''
+        returns the start time of the bspline
+        '''
+        return self._start_time
+
+    def get_end_time(self):
+        '''
+        returns the end time of the bspline
+        '''
+        return self._end_time
+
     def __create_knot_points(self):
         '''
         This function creates evenly distributed knot points

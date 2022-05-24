@@ -9,6 +9,7 @@ import numpy as np
 from pyrsistent import v 
 from scipy.optimize import minimize, Bounds, LinearConstraint, NonlinearConstraint
 from bsplinegenerator.matrix_evaluation import get_M_matrix, get_T_vector
+from bsplinegenerator.bsplines
 
 class TrajectoryGenerator:
     """
@@ -21,19 +22,22 @@ class TrajectoryGenerator:
         # private variables
         self._interval_spacing_length = interval_spacing_length
         self._order = order
+        self._control_point_list = []
+        self._scale_factor_list = []
+        
         # global variables used in obective and constraint functions
         self._dimension = 0
         self._number_of_splines = 0
         self._number_of_intervals_per_spline = np.array([])
-        self._spline_intial_control_point_indices = np.array([])
+        self._spline_first_control_point_indices = np.array([])
+        
 
     def generate_trajectory(self, waypoints):
         # create initial conditions
         self._dimension = np.shape(waypoints)[0]
         self._number_of_splines = self.__get_number_of_splines(waypoints)
         self._number_of_intervals_per_spline = self.__get_number_of_intervals_per_spline_array(waypoints)
-        self._spline_intial_control_point_indices = self.__get_spline_initial_control_point_indices_array(waypoints)
-        num_control_points = self.__get_number_of_control_points(waypoints)
+        self._spline_first_control_point_indices = self.__get_spline_first_control_point_indices_array(waypoints)
         num_splines = self.__get_number_of_splines(waypoints)
         initial_control_points = self.__create_initial_set_of_control_points(waypoints)
         initial_scale_factors = self.__create_initial_scale_factors(num_splines)
@@ -48,10 +52,11 @@ class TrajectoryGenerator:
             method='SLSQP', 
             constraints=(waypoint_constraint))
         # retrieve data
-        optimized_scale_factor = result.x[-1]
-        control_points_optimized = result.x[0:num_control_points*self._dimension].reshape(self._dimension,num_control_points)
-        return control_points_optimized, optimized_scale_factor
-
+        optimized_control_points = self.__create_list_of_control_points_per_spline(result.x)
+        optimized_scale_factors = self.__create_list_of_scale_factors(result.x)
+        self._control_point_list = optimized_control_points
+        self._scale_factors = optimized_scale_factors
+        
     def __minimize_distance_and_time_objective_function(self,variables):
         control_points_per_spline = self.__create_list_of_control_points_per_spline(variables)
         scale_factors = self.__create_list_of_scale_factors(variables)
@@ -69,11 +74,11 @@ class TrajectoryGenerator:
         control_points = np.reshape(variables[0:number_of_control_points*self._dimension],(self._dimension,number_of_control_points))
         control_points_per_spline_list = []
         for i in range(self._number_of_splines):
-            start_index = self._spline_intial_control_point_indices[i]
+            start_index = self._spline_first_control_point_indices[i]
             if i == self._number_of_splines -1:
                 end_index = number_of_control_points
             else:
-                end_index = self._spline_intial_control_point_indices[i+1]
+                end_index = self._spline_first_control_point_indices[i+1]
             control_points_per_spline_list.append(control_points[:,start_index:end_index])
         return control_points_per_spline_list
 
@@ -113,12 +118,12 @@ class TrajectoryGenerator:
     def __get_spline_initial_control_point_indices_array(self, waypoints):
         num_control_points_per_spline = self.__get_number_of_control_points_per_spline_array(waypoints)
         num_splines = self.__get_number_of_splines(waypoints)
-        initial_control_point_indices = np.zeros(num_splines)
+        first_control_point_indices = np.zeros(num_splines)
         index_count = 0
         for i in range(num_splines):
-            initial_control_point_indices[i] = index_count
+            first_control_point_indices[i] = index_count
             index_count += num_control_points_per_spline[i]
-        return initial_control_point_indices
+        return first_control_point_indices
             
     def __get_number_of_control_points(self, waypoints):
         n_total = self.__get_number_of_control_points_per_spline_array(waypoints)
@@ -163,6 +168,9 @@ class TrajectoryGenerator:
         constraint_matrix = np.kron(np.eye(dimension),constraint_matrix)
         constraint = LinearConstraint(constraint_matrix, lb=waypoint_constraints.flatten(), ub=waypoint_constraints.flatten())
         return constraint
+
+    def plot_trajectory(self, control_point_list, scale_factor_list):
+
         
 
 
