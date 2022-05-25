@@ -60,9 +60,9 @@ class PiecewiseBsplineEvaluation:
         for i in range(number_of_data_points):
             t = time_data[i]
             if dimension == 1:
-                spline_derivative_data[i] = self.get_spline_derivative_at_time(t)
+                spline_derivative_data[i] = self.get_spline_derivative_at_time(t,derivative_order)
             else:
-                spline_derivative_data[:,i][:,None] = self.get_spline_derivative_at_time(t)
+                spline_derivative_data[:,i][:,None] = self.get_spline_derivative_at_time(t,derivative_order)
         return spline_derivative_data, time_data
 
     def get_spline_at_time(self, time):
@@ -88,10 +88,20 @@ class PiecewiseBsplineEvaluation:
                 time_count += scale_factor*num_intervals
         return terminal_knot_points
 
-    # def get_curvature_at_time(self, time):
-    #     spline_number = self.__get_spline_number_at_time(time)
-    #     spline_curvature_at_time = self._bspline_list[spline_number].get_curvature_at_time_t(time)
-    #     return spline_curvature_at_time
+    def __get_spline_at_terminal_knot_points(self):
+        terminal_knot_points = self.__get_terminal_knot_points()
+        dimension = self.__get_dimension()
+        if dimension == 1:
+            spline_at_terminal_knot_points = np.zeros(len(terminal_knot_points))
+        else:
+            spline_at_terminal_knot_points = np.zeros((dimension, len(terminal_knot_points)))
+        for i in range(len(terminal_knot_points)):
+            t = terminal_knot_points[i]
+            if dimension == 1:
+                spline_at_terminal_knot_points[i] = self.get_spline_at_time(t)
+            else:
+                spline_at_terminal_knot_points[:,i][:,None] = self.get_spline_at_time(t)
+        return spline_at_terminal_knot_points
 
     def get_start_time(self):
         return self._start_time
@@ -188,18 +198,21 @@ class PiecewiseBsplineEvaluation:
                     ax.scatter(control_points[0,:], control_points[1,:],control_points[2,:],color="orange",label="Control Points")
                 else:
                     ax.scatter(control_points[0,:], control_points[1,:],control_points[2,:],color="orange")
+            # plot splines
+            current_spline_data = spline_data[:,start_index:end_index]
+            step = (time_data[1]  - time_data[0])/100
+            current_spline_data = np.concatenate((self.get_spline_at_time(start_time), current_spline_data, self.get_spline_at_time(end_time-step)),1)
+            if i == 0:
+                ax.plot(current_spline_data[0,:], current_spline_data[1,:],current_spline_data[2,:],color="blue",label="B-Spline")
+            else:
+                ax.plot(current_spline_data[0,:], current_spline_data[1,:],current_spline_data[2,:],color="blue")
             # plot terminal knot points
             if (show_terminal_knot_points):
                 if i == 0:
-                    ax.scatter(spline_data[0,start_index], spline_data[1,start_index],spline_data[2,start_index],color="blue",label="Spline at Terminal Knot Points")
+                    ax.scatter(current_spline_data[0,0], current_spline_data[1,0],current_spline_data[2,0],color="blue",label="Spline at Terminal Knot Points")
                 else:
-                    ax.scatter(spline_data[0,start_index], spline_data[1,start_index],spline_data[2,start_index],color="blue")
-                ax.scatter(spline_data[0,end_index], spline_data[1,end_index],spline_data[2,end_index],color="blue")
-            # plot splines
-            if i == 0:
-                ax.plot(spline_data[0,start_index:end_index], spline_data[1,start_index:end_index],spline_data[2,start_index:end_index],color="blue",label="B-Spline")
-            else:
-                ax.plot(spline_data[0,start_index:end_index], spline_data[1,start_index:end_index],spline_data[2,start_index:end_index],color="blue")
+                    ax.scatter(current_spline_data[0,0], current_spline_data[1,0],current_spline_data[2,0],color="blue")
+                ax.scatter(current_spline_data[0,-1], current_spline_data[1,-1],current_spline_data[2,-1],color="blue")
         ax.set_xlabel('x')
         ax.set_ylabel('y')
         ax.set_zlabel('z')
@@ -221,18 +234,21 @@ class PiecewiseBsplineEvaluation:
                     plt.scatter(control_points[0,:], control_points[1,:],linewidths=2,color="orange",label="Control Points")
                 else:
                     plt.scatter(control_points[0,:], control_points[1,:],linewidths=2,color="orange")
+            # plot splines
+            current_spline_data = spline_data[:,start_index:end_index]
+            step = (time_data[1]  - time_data[0])/100
+            current_spline_data = np.concatenate((self.get_spline_at_time(start_time), current_spline_data, self.get_spline_at_time(end_time-step)),1)
+            if i == 0:
+                plt.plot(current_spline_data[0,:], current_spline_data[1,:],color='blue',label="B-Spline")
+            else:
+                plt.plot(current_spline_data[0,:], current_spline_data[1,:],color='blue')
             # plot terminal knot points
             if (show_terminal_knot_points):
                 if i == 0:
-                    plt.scatter(spline_data[0,start_index],spline_data[1,start_index],color='blue',label="Spline at Terminal Knot Points")
+                    plt.scatter(current_spline_data[0,0],current_spline_data[1,0],color='blue',label="Spline at Terminal Knot Points")
                 else:
-                    plt.scatter(spline_data[0,start_index],spline_data[1,start_index],color='blue')
-                plt.scatter(spline_data[0,end_index],spline_data[1,end_index],color='blue')
-            # plot splines
-            if i == 0:
-                plt.plot(spline_data[0,start_index:end_index], spline_data[1,start_index:end_index],color='blue',label="B-Spline")
-            else:
-                plt.plot(spline_data[0,start_index:end_index], spline_data[1,start_index:end_index],color='blue')
+                    plt.scatter(current_spline_data[0,0],current_spline_data[1,0],color='blue')
+                plt.scatter(current_spline_data[0,-1],current_spline_data[1,-1],color='blue')
         plt.xlabel('x')
         plt.ylabel('y')
         ax = plt.gca()
@@ -255,6 +271,16 @@ class PiecewiseBsplineEvaluation:
                     plt.scatter(control_point_times, control_points,linewidths=2,color="orange",label="Control Points")
                 else:
                     plt.scatter(control_point_times, control_points,linewidths=2,color="orange")
+            # plot splines
+            current_spline_data = spline_data[start_index:end_index]
+            step = (time_data[1]  - time_data[0])/100
+            current_spline_data = np.concatenate((self.get_spline_at_time(start_time), current_spline_data, self.get_spline_at_time(end_time-step)),0)
+            current_time_data = time_data[start_index:end_index]
+            current_time_data = np.concatenate(([start_time], current_time_data, [end_time-step]),0)
+            if i == 0:
+                plt.plot(current_time_data, current_spline_data[:],color='blue',label="B-Spline")
+            else:
+                plt.plot(current_time_data, current_spline_data[:],color='blue')
             # plot terminal knot points
             if (show_terminal_knot_points):
                 if i == 0:
@@ -262,67 +288,48 @@ class PiecewiseBsplineEvaluation:
                 else:
                     plt.scatter(time_data[start_index],spline_data[start_index],color='blue')
                 plt.scatter(time_data[end_index],spline_data[end_index],color='blue')
-            # plot splines
-            if i == 0:
-                plt.plot(time_data[start_index:end_index], spline_data[start_index:end_index],color='blue',label="B-Spline")
-            else:
-                plt.plot(time_data[start_index:end_index], spline_data[start_index:end_index],color='blue')
         plt.xlabel('time')
         plt.ylabel('b(t)')
         ax = plt.gca()
             
-            # if (show_control_points):
-            #     control_point_times = self.get_time_to_control_point_correlation()
-            #     plt.scatter(control_point_times,control_points)
-            #     plt.plot(control_point_times,control_points,label="Control Points")
+    def plot_spline_vs_time(self, number_of_data_points,show_knot_points = True):
+            figure_title = str(self._order) + " Order Piecewise B-Spline vs Time"
+            dimension = self.__get_dimension()
+            spline_data, time_data = self.get_spline_data(number_of_data_points)
+            terminal_knot_points = self.__get_terminal_knot_points()
+            spline_at_terminal_knot_points = self.__get_spline_at_terminal_knot_points()
+            plt.figure(figure_title)
+            if(dimension > 1):
+                for i in range(dimension):
+                    spline_label = "Dimension " + str(i)
+                    plt.plot(time_data, spline_data[i,:],label=spline_label)
+                    if (show_knot_points):
+                        plt.scatter(terminal_knot_points, spline_at_terminal_knot_points[i,:])
+            else:
+                plt.plot(time_data, spline_data,label="Spline")
+                if (show_knot_points):
+                    plt.scatter(terminal_knot_points, spline_at_terminal_knot_points)
+            plt.xlabel('time')
+            plt.ylabel('b(t)')
+            ax = plt.gca()
+            plt.title(figure_title)
+            plt.legend()
+            plt.show()
 
 
-#     def plot_spline_vs_time(self, number_of_data_points,show_knot_points = True):
-#             figure_title = str(self._order) + " Order B-Spline vs Time"
-#             dimension = get_dimension(self._control_points)
-#             spline_data, time_data = self.get_spline_data(number_of_data_points)
-#             spline_at_knot_points, defined_knot_points = self.get_spline_at_knot_points()
-#             plt.figure(figure_title)
-#             if(dimension > 1):
-#                 for i in range(dimension):
-#                     spline_label = "Dimension " + str(i)
-#                     plt.plot(time_data, spline_data[i,:],label=spline_label)
-#                     if (show_knot_points):
-#                         plt.scatter(defined_knot_points, spline_at_knot_points[i,:])
-#             else:
-#                 plt.plot(time_data, spline_data,label="Spline")
-#                 if (show_knot_points):
-#                     plt.scatter(defined_knot_points, spline_at_knot_points)
-#             plt.xlabel('time')
-#             plt.ylabel('b(t)')
-#             ax = plt.gca()
-#             plt.title(figure_title)
-#             plt.legend()
-#             plt.show()
-
-
-#     def plot_derivative(self, number_of_data_points, derivative_order):
-#         figure_title = str(derivative_order) + " Order Derivative"
-#         dimension = get_dimension(self._control_points)
-#         spline_derivative_data, time_data = self.get_spline_derivative_data(number_of_data_points,derivative_order)
-#         plt.figure(figure_title)
-#         if dimension > 1:
-#             for i in range(dimension):
-#                 spline_label = "Dimension " + str(i)
-#                 plt.plot(time_data, spline_derivative_data[i,:],label=spline_label)
-#         else:
-#             plt.plot(time_data, spline_derivative_data, label="Spline Derivative")
-#         plt.xlabel('time')
-#         plt.ylabel(str(derivative_order) + ' derivative')
-#         plt.title(figure_title)
-#         plt.legend()
-#         plt.show()
-
-#     def plot_curvature(self, number_of_data_points):
-#         spline_curvature_data, time_data = self.get_spline_curvature_data(number_of_data_points)
-#         plt.figure("Curvature")
-#         plt.plot(time_data, spline_curvature_data)
-#         plt.xlabel('time')
-#         plt.ylabel('curvature')
-#         plt.title("Curvature")
-#         plt.show()
+    def plot_derivative(self, number_of_data_points, derivative_order):
+        figure_title = str(derivative_order) + " Order Derivative"
+        dimension = self.__get_dimension()
+        spline_derivative_data, time_data = self.get_spline_derivative_data(number_of_data_points,derivative_order)
+        plt.figure(figure_title)
+        if dimension > 1:
+            for i in range(dimension):
+                spline_label = "Dimension " + str(i)
+                plt.plot(time_data, spline_derivative_data[i,:],label=spline_label)
+        else:
+            plt.plot(time_data, spline_derivative_data, label="Spline Derivative")
+        plt.xlabel('time')
+        plt.ylabel(str(derivative_order) + ' derivative')
+        plt.title(figure_title)
+        plt.legend()
+        plt.show()
