@@ -26,7 +26,7 @@ if len(control_points) == 1:
 ### Parameters
 order = 5
 start_time = 0
-scale_factor = 1
+scale_factor = 0.00100000035366
 derivative_order = 1
 clamped = False
 number_data_points = 1000

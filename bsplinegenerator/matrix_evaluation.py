@@ -26,6 +26,11 @@ def matrix_bspline_evaluation(time, scale_factor, control_points, knot_points, c
         else:
             P[i] = control_points[i_p+i]
     T = get_T_vector(order,time,preceding_knot_point,0,scale_factor)
+    # print("time: " , time)
+    # print("knot_points: " , knot_points)
+    # print("P: " , P)
+    # print("M: " , M)
+    # print("T: " , T)
     spline_at_time_t = np.dot(P, np.dot(M,T))
     return spline_at_time_t
 

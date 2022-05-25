@@ -3,32 +3,27 @@ import numpy as np
 import matplotlib.pyplot as plt
 from bsplinegenerator.bsplines import BsplineEvaluation
 from trajectorygenerator.trajectory_generator import TrajectoryGenerator
+from trajectorygenerator.piecewise_bsplines import PiecewiseBsplineEvaluation
 
 order = 5
 dimension = 2
 # trajectory_gen = ConstrainedTrajectory(ObjectiveType.MINIMIZE_SNAP, dimension)
 # trajectory_gen = ConstrainedTrajectory(ObjectiveType.MINIMIZE_TIME_AND_DISTANCE, dimension)
 # trajectory_gen = ConstrainedTrajectory(ObjectiveType.MINIMIZE_ACCELERATION, dimension)
-trajectory_gen = TrajectoryGenerator()
-waypoints = np.array([[1,4,9],[2,4,5]])
+trajectory_gen = TrajectoryGenerator(order)
+waypoints = np.array([[1,5,9],[2,4,5]])
 start_time = 0
-control_points, scale_factor = trajectory_gen.generate_trajectory(waypoints, waypoint_directions)
-bspline = BsplineEvaluation(control_points, order, start_time, scale_factor, False)
-number_data_points = 1000
-spline_data, time_data = bspline.get_spline_data(number_data_points)
+control_point_list, scale_factor_list = trajectory_gen.generate_trajectory(waypoints)
+print("control_point_list : ", control_point_list)
+print("scale_factor_list : ", scale_factor_list)
 
-print("waypoints: " , waypoints)
-print("scale_factor: " , scale_factor)
 
-plt.figure("Optimized B-Spline")
-plt.scatter(control_points[0,:], control_points[1,:],facecolors='none',edgecolors='tab:green',linewidths=2,label="control points")
-plt.plot(control_points[0,:], control_points[1,:],color='tab:green')
-plt.plot(spline_data[0,:], spline_data[1,:],label="B-spline")
-plt.scatter(waypoints[0,:], waypoints[1,:],label="waypoints")
-plt.xlabel('x')
-plt.ylabel('y')
-plt.title("Optimized 5th order B-Spline")
-plt.legend()
-plt.show()
+piecewise_bspline = PiecewiseBsplineEvaluation(order, control_point_list, scale_factor_list,start_time)
+num_data_points = 1000
+piecewise_bspline.plot_splines(num_data_points)
+piecewise_bspline.plot_spline_vs_time(num_data_points)
 
-bspline.plot_derivative(number_data_points, 1)
+# initial_control = trajectory_gen.get_initial_control_points(waypoints)
+# plt.scatter(initial_control[0,:], initial_control[1,:])
+# plt.scatter(waypoints[0,:],waypoints[1,:])
+# plt.show()

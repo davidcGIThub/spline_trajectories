@@ -4,6 +4,7 @@ using the matrix method and the cox-de-boor table method for splines of order
 higher than the 5th degree. This also evaluates the derivatives of the B-spline
 """
 
+from itertools import count
 import numpy as np 
 import matplotlib.pyplot as plt
 from bsplinegenerator.matrix_evaluation import matrix_bspline_evaluation, derivative_matrix_bspline_evaluation
@@ -23,8 +24,8 @@ class BsplineEvaluation:
         Constructor for the BsplinEvaluation class, each column of
         control_points is a control point. Start time should be an integer.
         '''
-        self._control_points = control_points
         self._order = order
+        self._control_points  = self.__check_and_return_control_points(control_points,self._order)
         self._scale_factor = scale_factor
         self._start_time = start_time
         self._clamped = clamped
@@ -197,13 +198,25 @@ class BsplineEvaluation:
         '''
         return self._end_time
 
+    def __check_and_return_control_points(self, control_points, order):
+        '''
+        checks to see if there are sufficient enough control points
+        '''
+        num_control_points = count_number_of_control_points(control_points)
+        if num_control_points >= order + 1:
+            return control_points
+        else:
+            raise Exception("Not enough control points provided for the given order")
+        
+
     def __create_knot_points(self):
         '''
         This function creates evenly distributed knot points
         '''
         number_of_control_points = count_number_of_control_points(self._control_points)
         number_of_knot_points = number_of_control_points + self._order + 1
-        knot_points = np.arange(number_of_knot_points)*self._scale_factor + self._start_time - self._order*self._scale_factor
+        knot_points = (np.arange(number_of_knot_points) - self._order)*self._scale_factor + self._start_time
+        temp = np.arange(number_of_knot_points)*self._scale_factor
         return knot_points
 
     def __create_clamped_knot_points(self):

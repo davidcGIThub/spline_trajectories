@@ -123,6 +123,10 @@ class PiecewiseBsplineEvaluation:
                 break
             elif time == self.get_end_time():
                 spline_number = num_splines - 1
+            elif time < self._start_time or time > self.get_end_time():
+                print("Error: Time out of bounds")
+            else:
+                pass
             time_count += scale_factor*num_intervals
         return spline_number
 
@@ -200,8 +204,7 @@ class PiecewiseBsplineEvaluation:
                     ax.scatter(control_points[0,:], control_points[1,:],control_points[2,:],color="orange")
             # plot splines
             current_spline_data = spline_data[:,start_index:end_index]
-            step = (time_data[1]  - time_data[0])/100
-            current_spline_data = np.concatenate((self.get_spline_at_time(start_time), current_spline_data, self.get_spline_at_time(end_time-step)),1)
+            current_spline_data = np.concatenate((self.get_spline_at_time(start_time), current_spline_data),1)
             if i == 0:
                 ax.plot(current_spline_data[0,:], current_spline_data[1,:],current_spline_data[2,:],color="blue",label="B-Spline")
             else:
@@ -236,8 +239,9 @@ class PiecewiseBsplineEvaluation:
                     plt.scatter(control_points[0,:], control_points[1,:],linewidths=2,color="orange")
             # plot splines
             current_spline_data = spline_data[:,start_index:end_index]
-            step = (time_data[1]  - time_data[0])/100
-            current_spline_data = np.concatenate((self.get_spline_at_time(start_time), current_spline_data, self.get_spline_at_time(end_time-step)),1)
+            spline_at_start = self._bspline_list[i].get_spline_at_time_t(start_time)
+            spline_at_end = self._bspline_list[i].get_spline_at_time_t(end_time)
+            current_spline_data = np.concatenate((spline_at_start, current_spline_data, spline_at_end),1)
             if i == 0:
                 plt.plot(current_spline_data[0,:], current_spline_data[1,:],color='blue',label="B-Spline")
             else:
@@ -273,10 +277,11 @@ class PiecewiseBsplineEvaluation:
                     plt.scatter(control_point_times, control_points,linewidths=2,color="orange")
             # plot splines
             current_spline_data = spline_data[start_index:end_index]
-            step = (time_data[1]  - time_data[0])/100
-            current_spline_data = np.concatenate((self.get_spline_at_time(start_time), current_spline_data, self.get_spline_at_time(end_time-step)),0)
+            spline_at_start = self.get_spline_at_time(start_time)
+            spline_at_end = self._bspline_list[i].get_spline_at_time_t(end_time)
+            current_spline_data = np.concatenate((spline_at_start, current_spline_data, spline_at_end),0)
             current_time_data = time_data[start_index:end_index]
-            current_time_data = np.concatenate(([start_time], current_time_data, [end_time-step]),0)
+            current_time_data = np.concatenate(([start_time], current_time_data, [end_time]),0)
             if i == 0:
                 plt.plot(current_time_data, current_spline_data[:],color='blue',label="B-Spline")
             else:
@@ -284,10 +289,10 @@ class PiecewiseBsplineEvaluation:
             # plot terminal knot points
             if (show_terminal_knot_points):
                 if i == 0:
-                    plt.scatter(time_data[start_index],spline_data[start_index],color='blue',label="Spline at Terminal Knot Points")
+                    plt.scatter(current_time_data[0],current_spline_data[0],color='blue',label="Spline at Terminal Knot Points")
                 else:
-                    plt.scatter(time_data[start_index],spline_data[start_index],color='blue')
-                plt.scatter(time_data[end_index],spline_data[end_index],color='blue')
+                    plt.scatter(current_time_data[0],current_spline_data[0],color='blue')
+                plt.scatter(current_time_data[-1],current_spline_data[-1],color='blue')
         plt.xlabel('time')
         plt.ylabel('b(t)')
         ax = plt.gca()
@@ -315,7 +320,6 @@ class PiecewiseBsplineEvaluation:
             plt.title(figure_title)
             plt.legend()
             plt.show()
-
 
     def plot_derivative(self, number_of_data_points, derivative_order):
         figure_title = str(derivative_order) + " Order Derivative"
