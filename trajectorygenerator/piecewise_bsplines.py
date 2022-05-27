@@ -65,6 +65,19 @@ class PiecewiseBsplineEvaluation:
                 spline_derivative_data[:,i][:,None] = self.get_spline_derivative_at_time(t,derivative_order)
         return spline_derivative_data, time_data
 
+    def get_derivative_magnitude_data(self, number_of_data_points, derivative_order=1):
+        '''
+        Returns equally distributed data points for the derivative magnitude of
+        the piecewise spline, as well as time data for the parameterization
+        '''
+        end_time = self.get_end_time()
+        time_data = np.linspace(self._start_time, end_time , number_of_data_points)
+        derivative_magnitude_data = np.zeros(number_of_data_points)
+        for i in range(number_of_data_points):
+            t = time_data[i]
+            derivative_magnitude_data[i] = self.get_derivative_magnitude_at_time(t,derivative_order)
+        return derivative_magnitude_data, time_data
+
     def get_spline_at_time(self, time):
         spline_number = self.__get_spline_number_at_time(time)
         spline_at_time = self._bspline_list[spline_number].get_spline_at_time_t(time)
@@ -74,6 +87,11 @@ class PiecewiseBsplineEvaluation:
         spline_number = self.__get_spline_number_at_time(time)
         spline_derivative_at_time = self._bspline_list[spline_number].get_derivative_at_time_t(time, derivative_order)
         return spline_derivative_at_time
+
+    def get_derivative_magnitude_at_time(self, time, derivative_order):
+        spline_number = self.__get_spline_number_at_time(time)
+        derivative_magnitude_at_time = self._bspline_list[spline_number].get_derivative_magnitude_at_time_t(time, derivative_order)
+        return derivative_magnitude_at_time
 
     def __get_terminal_knot_points(self):
         num_terminal_knot_points =  self.__get_number_of_terminal_knot_points()
@@ -321,7 +339,7 @@ class PiecewiseBsplineEvaluation:
             plt.legend()
             plt.show()
 
-    def plot_derivative(self, number_of_data_points, derivative_order):
+    def plot_derivative(self, number_of_data_points, derivative_order, plot_magnitude = True):
         figure_title = str(derivative_order) + " Order Derivative"
         dimension = self.__get_dimension()
         spline_derivative_data, time_data = self.get_spline_derivative_data(number_of_data_points,derivative_order)
@@ -332,6 +350,9 @@ class PiecewiseBsplineEvaluation:
                 plt.plot(time_data, spline_derivative_data[i,:],label=spline_label)
         else:
             plt.plot(time_data, spline_derivative_data, label="Spline Derivative")
+        if plot_magnitude:
+            derivative_magnitude_data, time_data  = self.get_derivative_magnitude_data(number_of_data_points, derivative_order)
+            plt.plot(time_data, derivative_magnitude_data, label="Derivative Magnitude")
         plt.xlabel('time')
         plt.ylabel(str(derivative_order) + ' derivative')
         plt.title(figure_title)

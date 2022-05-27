@@ -73,6 +73,18 @@ class BsplineEvaluation:
                 spline_derivative_data[:,i][:,None] = self.get_derivative_at_time_t(t, rth_derivative)
         return spline_derivative_data, time_data
 
+    def get_derivative_magnitude_data(self, number_of_data_points, rth_derivative):
+        '''
+        Returns equally distributed data points for the derivative magnitude
+        of the spline, as well as time data for the parameterization
+        '''
+        time_data = np.linspace(self._start_time, self._end_time, number_of_data_points)
+        derivative_magnitude_data = np.zeros(number_of_data_points)
+        for i in range(number_of_data_points):
+            t = time_data[i]
+            derivative_magnitude_data[i] = self.get_derivative_magnitude_at_time_t(t, rth_derivative)
+        return derivative_magnitude_data, time_data
+
     def get_spline_curvature_data(self,number_of_data_points):
         '''
         Returns equally distributed data points for the curvature of the spline, 
@@ -117,6 +129,21 @@ class BsplineEvaluation:
         else:
             derivative_at_time_t = derivative_matrix_bspline_evaluation(time, derivative_order, self._scale_factor, self._control_points, self._knot_points, self._clamped)
         return derivative_at_time_t
+
+    def get_derivative_magnitude_at_time_t(self, time, derivative_order):
+        '''
+        This function evaluates the rth derivative magnitude of the spline at time t
+        '''
+        if self._order > 5:
+            derivative_at_time_t = derivative_table_bspline_evaluation(time, derivative_order, self._control_points, self._knot_points, self._clamped)       
+        else:
+            derivative_at_time_t = derivative_matrix_bspline_evaluation(time, derivative_order, self._scale_factor, self._control_points, self._knot_points, self._clamped)
+        dimension  = get_dimension(self._control_points)
+        if dimension == 1:
+            derivative_magnitude = derivative_at_time_t
+        else:
+            derivative_magnitude = np.linalg.norm(derivative_at_time_t)
+        return derivative_magnitude
 
     def get_curvature_at_time_t(self, time):
         '''
@@ -329,6 +356,17 @@ class BsplineEvaluation:
                 plt.plot(time_data, spline_derivative_data[i,:],label=spline_label)
         else:
             plt.plot(time_data, spline_derivative_data, label="Spline Derivative")
+        plt.xlabel('time')
+        plt.ylabel(str(derivative_order) + ' derivative')
+        plt.title(figure_title)
+        plt.legend()
+        plt.show()
+    
+    def plot_derivative_magnitude(self, number_of_data_points, derivative_order):
+        figure_title = "Magnitude of " + str(derivative_order) + " Order Derivative"
+        derivative_magnitude_data, time_data = self.get_derivative_magnitude_data(number_of_data_points,derivative_order)
+        plt.figure(figure_title)
+        plt.plot(time_data, derivative_magnitude_data, label="Spline Derivative Magnitude")
         plt.xlabel('time')
         plt.ylabel(str(derivative_order) + ' derivative')
         plt.title(figure_title)

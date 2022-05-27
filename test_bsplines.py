@@ -48,17 +48,14 @@ print("defined knot points: " , defined_knot_points)
 print("spline at knots: " , spline_at_knot_points)
 print("max_derivative: " , np.max(spline_derivative_data))
 print("max_curvature: " , np.max(spline_curvature_data))
-theta = np.arctan2(2*leg1, leg2)
-print("theta: " , theta)
-print("min_diameter: " , 1/np.max(spline_curvature_data)*2)
-print("correlation: " , 1/np.max(spline_curvature_data)*2/np.sin(theta))
-print("number_of_basis_functions: " , len(basis_function_data))
 
 # Plot Spline Data
 bspline.plot_spline(number_data_points)
 bspline.plot_spline_vs_time(number_data_points)
 bspline.plot_basis_functions(number_data_points)
 bspline.plot_derivative(number_data_points, derivative_order)
+bspline.plot_derivative_magnitude(number_data_points, derivative_order)
 bspline.plot_curvature(number_data_points)
+
 
 
