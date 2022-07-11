@@ -65,6 +65,15 @@ class PiecewiseBsplineEvaluation:
                 spline_derivative_data[:,i][:,None] = self.get_spline_derivative_at_time(t,derivative_order)
         return spline_derivative_data, time_data
 
+    def get_curvature_data(self, number_of_data_points):
+        end_time = self.get_end_time()
+        time_data = np.linspace(self._start_time, end_time , number_of_data_points)
+        curvature_data = np.zeros(number_of_data_points)
+        for i in range(number_of_data_points):
+            t = time_data[i]
+            curvature_data[i] = self.get_curvature_at_time(t)
+        return curvature_data, time_data
+
     def get_derivative_magnitude_data(self, number_of_data_points, derivative_order=1):
         '''
         Returns equally distributed data points for the derivative magnitude of
@@ -87,6 +96,11 @@ class PiecewiseBsplineEvaluation:
         spline_number = self.__get_spline_number_at_time(time)
         spline_derivative_at_time = self._bspline_list[spline_number].get_derivative_at_time_t(time, derivative_order)
         return spline_derivative_at_time
+
+    def get_curvature_at_time(self, time):
+        spline_number = self.__get_spline_number_at_time(time)
+        curvature_at_time = self._bspline_list[spline_number].get_curvature_at_time_t(time)
+        return curvature_at_time
 
     def get_derivative_magnitude_at_time(self, time, derivative_order):
         spline_number = self.__get_spline_number_at_time(time)
@@ -355,6 +369,17 @@ class PiecewiseBsplineEvaluation:
             plt.plot(time_data, derivative_magnitude_data, label="Derivative Magnitude")
         plt.xlabel('time')
         plt.ylabel(str(derivative_order) + ' derivative')
+        plt.title(figure_title)
+        plt.legend()
+        plt.show()
+
+    def plot_curvature(self, number_of_data_points):
+        figure_title = "Curvature"
+        curvature_data, time_data = self. get_curvature_data(number_of_data_points)
+        plt.figure(figure_title)
+        plt.plot(time_data, curvature_data, label="Spline Curvature")
+        plt.xlabel('time')
+        plt.ylabel('curvature')
         plt.title(figure_title)
         plt.legend()
         plt.show()

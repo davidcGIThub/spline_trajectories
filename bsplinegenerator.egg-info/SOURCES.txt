@@ -1,0 +1,12 @@
+README.md
+setup.py
+bsplinegenerator/__init__.py
+bsplinegenerator/bsplines.py
+bsplinegenerator/helper_functions.py
+bsplinegenerator/matrix_evaluation.py
+bsplinegenerator/recursive_evaluation.py
+bsplinegenerator/table_evaluation.py
+bsplinegenerator.egg-info/PKG-INFO
+bsplinegenerator.egg-info/SOURCES.txt
+bsplinegenerator.egg-info/dependency_links.txt
+bsplinegenerator.egg-info/top_level.txt

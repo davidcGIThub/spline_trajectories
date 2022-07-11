@@ -24,7 +24,7 @@ if len(control_points) == 1:
     control_points = control_points.flatten()
 
 ### Parameters
-order = 5
+order = 4
 start_time = 0
 scale_factor = 0.00100000035366
 derivative_order = 1

@@ -5,7 +5,7 @@ the curvature as well as region avoidance. ** currently works for dimension 2-3,
 """
 import numpy as np
 from scipy.optimize import minimize, Bounds, LinearConstraint, NonlinearConstraint
-from bsplinegenerator.matrix_evaluation import get_M_matrix, get_T_vector
+from bsplinegenerator.matrix_evaluation import get_M_matrix, get_T_vector, get_T_derivative_vector
 
 class TrajectoryGenerator:
     """
@@ -24,9 +24,11 @@ class TrajectoryGenerator:
         self._dimension = 0
         self._number_of_splines = 0
         self._number_of_intervals_per_spline = np.array([])
+        self._control_point_vector = np.array([])
         
-    def generate_trajectory(self, waypoints, velocity_waypoints, max_velocity,max_acceleration):
+    def generate_trajectory(self, waypoints, velocity_waypoints, max_velocity,max_acceleration, max_turn_rate):
         # create initial conditions
+        max_curvature = max_turn_rate/max_velocity
         self._dimension = np.shape(waypoints)[0]
         self._number_of_splines = self.__get_number_of_splines(waypoints)
         self._number_of_intervals_per_spline = self.__get_number_of_intervals_per_spline_array(waypoints)
@@ -44,14 +46,16 @@ class TrajectoryGenerator:
         velocity_waypoint_constraint = self.__create_velocity_waypoint_constraints(velocity_waypoints)
         max_velocity_constraint = self.__create_max_velocity_constraint(max_velocity, num_control_points)
         max_acceleration_constraint = self.__create_acceleration_constraint(max_acceleration, num_control_points)
+        curvature_constraint = self.__create_curvature_constraint(max_curvature)
         minimize_options = {'disp': True}#, 'maxiter': self.maxiter, 'ftol': tol}
         # perform optimizationd
         result = minimize(
             objectiveFunction,
             x0=optimization_variables,
             method='SLSQP', 
+            # method = 'trust-constr',
             constraints=(waypoint_constraint, velocity_waypoint_constraint,max_velocity_constraint,
-                g2_continuity_constraint,max_acceleration_constraint),
+                g2_continuity_constraint,max_acceleration_constraint,curvature_constraint),
             bounds=objective_variable_bounds, 
             options = minimize_options)
         # retrieve data
@@ -150,8 +154,8 @@ class TrajectoryGenerator:
 
     def __create_waypoint_constraint(self, waypoints, dimension):
         M = get_M_matrix(0, self._order, np.array([]), False)
-        T_0 = get_T_vector(self._order,0,0,0,1)
-        T_f = get_T_vector(self._order,1,0,0,1)
+        T_0 = get_T_vector(self._order,0,0,1)
+        T_f = get_T_vector(self._order,1,0,1)
         num_control_points = self.__get_number_of_control_points(waypoints)
         num_splines = self.__get_number_of_splines(waypoints)
         num_control_points_per_spline_array = self.__get_number_of_control_points_per_spline_array(waypoints)
@@ -230,8 +234,8 @@ class TrajectoryGenerator:
                 scale_factor = scale_factors[i]
                 P_0 = control_points_per_spline[i][:,0:self._order+1]
                 P_f = control_points_per_spline[i][:,-(self._order+1):]
-                T_0 = get_T_vector(self._order,0,0,1,scale_factor)
-                T_f = get_T_vector(self._order,scale_factor,0,1,scale_factor)
+                T_0 = get_T_derivative_vector(self._order,0,0,1,scale_factor)
+                T_f = get_T_derivative_vector(self._order,scale_factor,0,1,scale_factor)
                 velocity_waypoint_constraints[i*2*dim:i*2*dim+dim] = np.dot(P_0,np.dot(M,T_0)).flatten() - velocity_waypoints[:,i]
                 velocity_waypoint_constraints[i*2*dim+dim:(i+1)*2*dim] = np.dot(P_f,np.dot(M,T_f)).flatten() - velocity_waypoints[:,i+1]
             return velocity_waypoint_constraints
@@ -249,6 +253,46 @@ class TrajectoryGenerator:
         lower_bounds[num_variables-num_scale_factors:num_variables] = 0.0001
         return Bounds(lb=lower_bounds, ub = upper_bounds)
 
+    def __create_curvature_constraint(self, max_curvature):
+        M = get_M_matrix(0, self._order, np.array([]), False)
+        total_number_of_intervals = np.sum(self._number_of_intervals_per_spline)
+        def max_curvature_objective_function(u_parameter):
+            u = u_parameter[0]
+            alpha = 1
+            dT = get_T_derivative_vector(self._order,u,0,1,alpha)
+            d2T = get_T_derivative_vector(self._order,u,0,2,alpha)
+            vel_vec = np.dot(self._control_point_vector,np.dot(M,dT)).flatten()
+            accel_vec = np.dot(self._control_point_vector,np.dot(M,d2T)).flatten()
+            curvature = np.linalg.norm(np.cross(vel_vec,accel_vec))/ np.linalg.norm(vel_vec)**3
+            return -curvature
+        u_parameter_bounds = Bounds(lb=0, ub = 1.0)
+        def curvature_constraint_function(variables):
+            control_points_per_spline = self.__create_list_of_control_points(variables)
+            curvature_constraints = np.zeros(total_number_of_intervals)
+            interval_count = 0
+            for i in range(self._number_of_splines):
+                control_points = control_points_per_spline[i]
+                num_intervals = self._number_of_intervals_per_spline[i]
+                for j in range(num_intervals):
+                    self._control_point_vector = control_points[:,j:j+self._order+1]
+                    t0_1 = np.array([0])
+                    t0_2 = np.array([0.5])
+                    t0_3 = np.array([1])
+                    result_1 = minimize(max_curvature_objective_function, x0=t0_1, method='SLSQP', bounds=u_parameter_bounds)
+                    result_2 = minimize(max_curvature_objective_function, x0=t0_2, method='SLSQP', bounds=u_parameter_bounds)
+                    result_3 = minimize(max_curvature_objective_function, x0=t0_3, method='SLSQP', bounds=u_parameter_bounds)
+                    curvature_1 = -max_curvature_objective_function(np.array([result_1.x]))
+                    curvature_2 = -max_curvature_objective_function(np.array([result_2.x]))
+                    curvature_3 = -max_curvature_objective_function(np.array([result_3.x]))
+                    greatest_curvature = np.max((curvature_1,curvature_2,curvature_3))
+                    curvature_constraints[interval_count] = greatest_curvature - max_curvature 
+                    interval_count += 1
+            return curvature_constraints
+        lower_bound = -np.inf
+        upper_bound = 0
+        curvature_constraint = NonlinearConstraint(curvature_constraint_function, lb=lower_bound,ub=upper_bound)
+        return curvature_constraint
+
     def __create_G1_continuity_constraint(self):
         def g1_continuity_constraint_function(variables):
             M = get_M_matrix(0, self._order, np.array([]), False)
@@ -261,8 +305,8 @@ class TrajectoryGenerator:
                 scale_factor_2 = scale_factors[i+1]
                 P_1 = control_points_per_spline[i][:,-(self._order+1):]
                 P_2 = control_points_per_spline[i+1][:,0:self._order+1]
-                T_f1 = get_T_vector(self._order,scale_factor_1,0,1,scale_factor_1)
-                T_02 = get_T_vector(self._order,0,0,1,scale_factor_2)
+                T_f1 = get_T_derivative_vector(self._order,scale_factor_1,0,1,scale_factor_1)
+                T_02 = get_T_derivative_vector(self._order,0,0,1,scale_factor_2)
                 g1_constraints[i*dim:i*dim+dim] = (np.dot(P_1 , np.dot(M,T_f1)) - np.dot(P_2,np.dot(M,T_02))).flatten()
             # print("g1_constraints: " , g1_constraints)
             return g1_constraints
@@ -283,8 +327,8 @@ class TrajectoryGenerator:
                 scale_factor_2 = scale_factors[i+1]
                 P_1 = control_points_per_spline[i][:,-(self._order+1):]
                 P_2 = control_points_per_spline[i+1][:,0:self._order+1]
-                T_f1 = get_T_vector(self._order,scale_factor_1,0,2,scale_factor_1)
-                T_02 = get_T_vector(self._order,0,0,2,scale_factor_2)
+                T_f1 = get_T_derivative_vector(self._order,scale_factor_1,0,2,scale_factor_1)
+                T_02 = get_T_derivative_vector(self._order,0,0,2,scale_factor_2)
                 g2_constraints[i*dim:i*dim+dim] = (np.dot(P_1 , np.dot(M,T_f1)) - np.dot(P_2,np.dot(M,T_02))).flatten()
             # print("g2_constraints: " , g2_constraints)
             return g2_constraints

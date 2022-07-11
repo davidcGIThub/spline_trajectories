@@ -9,51 +9,31 @@ from matplotlib.pyplot import sca
 import numpy as np 
 from scipy.optimize import minimize, Bounds, LinearConstraint, NonlinearConstraint
 from bsplinegenerator.matrix_evaluation import get_M_matrix
-from enum import Enum
 
-class ObjectiveType(Enum):
-    MINIMIZE_TIME = 1
-    MINIMIZE_DISTANCE = 2
-    MINIMIZE_TIME_AND_DISTANCE = 3
-    MINIMIZE_VELOCITY = 4
-    MINIMIZE_ACCELERATION = 5
-    MINIMIZE_JERK = 6
-    MINIMIZE_SNAP = 7
 
-class ConstrainedTrajectory:
+class BsplineTrajectory:
     """
     This module contains code to generate B-spline trajectories through some waypoints
     with constraints over the derivatives of the trajectory, and combined derivative magnitudes.
     It may also constrain the curvature as well as region avoidance.
     """
 
-    def __init__(self, objectiveType, dimension, max_interval_distance = 1, control_point_bounds = [-100,100]):
-        self._objectiveType = objectiveType
+    def __init__(self, dimension, order, max_interval_distance = 1, control_point_bounds = [-100,100]):
         self._max_interval_distance = max_interval_distance
         self._control_point_bounds = control_point_bounds
         self._dimension = dimension
-        self._order = 5
+        self._order = order
         self._max_curvature = 10000
+        self._waypoints = np.array([])
+        self._waypoint_directions = np.array([])
 
-    def generate_trajectory(self, waypoints, max_curvature=np.inf):
-        if self._objectiveType == ObjectiveType.MINIMIZE_TIME:
-            objectiveFunction = self.__minimize_time_objective_function
-        elif self._objectiveType == ObjectiveType.MINIMIZE_DISTANCE:
-            objectiveFunction = self.__minimize_distance_objective_function
-        elif self._objectiveType == ObjectiveType.MINIMIZE_TIME_AND_DISTANCE:
-            objectiveFunction = self.__minimize_distance_and_time_objective_function
-        elif self._objectiveType == ObjectiveType.MINIMIZE_VELOCITY:
-            objectiveFunction = self.__minimize_velocity_objective_function
-        elif self._objectiveType == ObjectiveType.MINIMIZE_ACCELERATION:
-            objectiveFunction = self.__minimize_acceleration_objective_function
-        elif self._objectiveType == ObjectiveType.MINIMIZE_JERK:
-            objectiveFunction = self.__minimize_jerk_objective_function
-        elif self._objectiveType == ObjectiveType.MINIMIZE_SNAP:
-            objectiveFunction = self.__minimize_snap_objective_function
-        self._max_curvature = max_curvature
+    def generate_trajectory(self, waypoints,waypoint_directions, max_curvature=np.inf):
+        objectiveFunction = self.__minimize_distance_and_time_objective_function
+        self._waypoints = waypoints
+        self._waypoint_directions = waypoint_directions
+        # self._max_curvature = max_curvature
         initial_control_points = self.__create_interpolated_points(waypoints)
         number_of_control_points = np.shape(initial_control_points)[1]
-        print("number_control_points: " , number_of_control_points )
         initial_scale_factor = 1
         optimization_variables = np.concatenate((initial_control_points.flatten(),[initial_scale_factor]))
         optimization_variable_lower_bound = optimization_variables*0 + self._control_point_bounds[0]
@@ -61,6 +41,7 @@ class ConstrainedTrajectory:
         optimization_variable_lower_bound[-1] = 0.0001
         optimization_variable_bounds = Bounds(lb=optimization_variable_lower_bound, ub = optimization_variable_upper_bound)
         waypoint_constraint = self.__create_waypoint_constraint(waypoints, number_of_control_points)
+        # waypoint_direction_constraint = self.__create_direction_constraint()
         result = minimize(
             objectiveFunction,
             x0=optimization_variables,
@@ -71,83 +52,31 @@ class ConstrainedTrajectory:
         control_points_optimized = result.x[0:number_of_control_points*self._dimension].reshape(self._dimension,number_of_control_points)
         return control_points_optimized, optimized_scale_factor
 
-    def __minimize_time_objective_function(self,variables):
-        number_of_control_points = int((len(variables) - 1)/2)
-        scale_factor = variables[-1]
-        time = scale_factor * (number_of_control_points - 2*self._order)
-        return time
-
-    def __minimize_distance_objective_function(self,variables):
-        number_of_control_points = int((len(variables)-1)/2)
-        control_points = np.reshape(variables[0:number_of_control_points*2],(2,number_of_control_points))
-        distances = self.__get_distances_between_points(control_points)
-        # Try minimizing distance between Bezeir control points in the future
-        return np.sum(distances)
-
     def __minimize_distance_and_time_objective_function(self,variables):
         number_of_control_points = int((len(variables)-1)/2)
         control_points = np.reshape(variables[0:number_of_control_points*2],(2,number_of_control_points))
         distances = self.__get_distances_between_points(control_points)
         scale_factor = variables[-1]
-        return np.sum(distances)*scale_factor
+        return np.sum(distances) *scale_factor
 
-    def __minimize_velocity_objective_function(self,variables):
-        number_of_control_points = int((len(variables)-1)/2)
-        control_points = np.reshape(variables[0:number_of_control_points*2],(2,number_of_control_points))
-        scale_factor = variables[-1]
-        summation = 0
-        for i in range(0,number_of_control_points-5):
-            p1 = control_points[:,i]
-            p2 = control_points[:,i+1]
-            p3 = control_points[:,i+2]
-            p4 = control_points[:,i+3]
-            p5 = control_points[:,i+4]
-            p6 = control_points[:,i+5]
-            integrands = 1/(181440*scale_factor)*(35*p1**2 + p1*(1051*p2+460*p3-1330*p4 - 260*p5-p6)
-                + 10319*p2**2 + 19726*p2*p3 - 5*p2*(6044*p4 + 2689*p5 + 50*p6) + 23624*p3**2
-                - 35884*p3*p4 - 43520*p3*p5 - 1330*p3*p6 + 23624*p4**2 + 24326*p4*p5 + 460*p4*p6 + 24329*p5**2 
-                + 1751*p5*p6 + 35*p6**2)
-            summation += np.sum(integrands)
-        return summation
-
-    def __minimize_acceleration_objective_function(self,variables):
-        number_of_control_points = int((len(variables)-1)/2)
-        control_points = np.reshape(variables[0:number_of_control_points*2],(2,number_of_control_points))
-        scale_factor = variables[-1]
-        summation = 0
-        for i in range(0,number_of_control_points-5):
-            p1 = control_points[:,i]
-            p2 = control_points[:,i+1]
-            p3 = control_points[:,i+2]
-            p4 = control_points[:,i+3]
-            p5 = control_points[:,i+4]
-            p6 = control_points[:,i+5]
-            integrands = 1/(2520*scale_factor**3)*(10*p1**2 + p1*(89*p2 - 178*p3 + 10*p4 + 68*p5 + p6)
-               + 376*p2**2 + p2*(-958*p3 - 638*p4 + 1277*p5 + 58*p6) +
-               916*p3**2 - 68*p3*p4 - 538*p3*p5 + 10*p3*p6 + 916*p4**2 -
-               2738*p4*p5 - 178*p4*p6 + 2266*p5**2 + 289*p5*p6 + 10*p6**2)
-            summation += np.sum(integrands)
-        return summation
-
-    def __minimize_jerk_objective_function(self,variables):
-        #TODO
-        pass
-
-    def __minimize_snap_objective_function(self,variables):
-        number_of_control_points = int((len(variables)-1)/2)
-        control_points = np.reshape(variables[0:number_of_control_points*2],(2,number_of_control_points))
-        scale_factor = variables[-1]
-        summation = 0
-        for i in range(0,number_of_control_points-5):
-            p1 = control_points[:,i]
-            p2 = control_points[:,i+1]
-            p3 = control_points[:,i+2]
-            p4 = control_points[:,i+3]
-            p5 = control_points[:,i+4]
-            p6 = control_points[:,i+5]
-            integrands = ((p1-4*p2+6*p3-4*p4+p5)**3 - (p2-4*p3+6*p4+6*p5+p6)**3)/(3*(scale_factor**7)*(p1-5*(p2-2*p3+2*p4+p5)-p6))
-            summation += np.sum(integrands)
-        return summation
+    def __create_direction_constraint(self):
+        def direction_constraint_function(optimization_variables):
+            # has problems with waypoint at [0,0]
+            number_of_control_points = int((len(optimization_variables) - 1)/2)
+            scale_factor = optimization_variables[-1]
+            control_points = np.transpose(np.reshape(optimization_variables[0:number_of_control_points*2],(2,number_of_control_points)))
+            D_ = self.compose_point_velocity_constraint_matrix(self._order,self._waypoints, number_of_control_points,scale_factor)
+            velocities = np.dot(D_,control_points)
+            number_of_angles = np.shape(velocities)[0]
+            angles = np.zeros(number_of_angles)
+            for i in range(number_of_angles):
+                angles[i] = np.arctan2(velocities[i,1],velocities[i,0])
+            constraints = self._waypoint_directions - angles   
+            return constraints
+        lower_bound = np.zeros(np.shape(self._waypoints)[1])
+        upper_bound = np.zeros(np.shape(self._waypoints)[1])
+        direction_constraint = NonlinearConstraint(direction_constraint_function, lb=lower_bound,ub=upper_bound)
+        return direction_constraint
 
     def compose_point_velocity_constraint_matrix(self, order,waypoints, number_of_control_points,alpha):
         M = get_M_matrix(0, self._order, np.array([]), False)
@@ -176,8 +105,6 @@ class ConstrainedTrajectory:
         Gamma_f = np.ones((self._order+1,1))
         M_Gamma_0 = np.dot(M,Gamma_0)
         M_Gamma_f = np.dot(M,Gamma_f)
-        print("M_Gamma_0 :" , M_Gamma_0)
-        print("M_Gamma_f :" , M_Gamma_f)
         number_of_waypoints = np.shape(waypoints)[1]
         correlation_map = self.__correlate_waypoints_to_control_points(waypoints,number_of_control_points)
         constraint_sub_matrix = np.zeros((number_of_waypoints , number_of_control_points))
@@ -186,16 +113,10 @@ class ConstrainedTrajectory:
             constraint_sub_matrix[i,control_point_index:control_point_index+self._order+1][:,None] = M_Gamma_0
             if i == (number_of_waypoints-1):
                 constraint_sub_matrix[i,control_point_index:control_point_index+self._order+1][:,None] = M_Gamma_f
-        print("constraint_sub_matrix :" , constraint_sub_matrix)
         constraint_matrix_top = np.concatenate((constraint_sub_matrix,np.zeros((number_of_waypoints , number_of_control_points))),0)
-        print("constraint_matrix_top :" , constraint_matrix_top)
         constraint_matrix_bottom = np.concatenate((np.zeros((number_of_waypoints , number_of_control_points)),constraint_sub_matrix),0)
         constraint_matrix = np.concatenate((constraint_matrix_top,constraint_matrix_bottom),1)
-        print("number_of_waypoints: ", number_of_waypoints)
-        print("self._dimension: ", self._dimension)
         scale_factor_column = np.zeros((number_of_waypoints*self._dimension,1))
-        print(np.shape(constraint_matrix))
-        print(np.shape(scale_factor_column))
         constraint_matrix  = np.concatenate((constraint_matrix,scale_factor_column),1)
         constraint = LinearConstraint(constraint_matrix, lb=waypoints.flatten(), ub=waypoints.flatten())
         return constraint
@@ -241,7 +162,6 @@ class ConstrainedTrajectory:
             new_points[:,i] = new_point
         new_points[:,number_of_new_points-1] = original_points[:,-1]
         return new_points
-
 
     # def __create_curvature_constraint(self, number_of_control_points):
     #     def curvature_constraint_function(variables):

@@ -2,17 +2,18 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from bsplinegenerator.bsplines import BsplineEvaluation
-from trajectorygenerator.constrained_trajectory import ConstrainedTrajectory, ObjectiveType
+from trajectorygenerator.bspline_trajectory_generator import BsplineTrajectory
 
 order = 2
 dimension = 2
 # trajectory_gen = ConstrainedTrajectory(ObjectiveType.MINIMIZE_SNAP, dimension)
-trajectory_gen = ConstrainedTrajectory(ObjectiveType.MINIMIZE_TIME_AND_DISTANCE, dimension,order)
+trajectory_gen =  BsplineTrajectory(dimension,order)
 # trajectory_gen = ConstrainedTrajectory(ObjectiveType.MINIMIZE_ACCELERATION, dimension)
 # trajectory_gen = ConstrainedTrajectory(ObjectiveType.MINIMIZE_VELOCITY, dimension)
 waypoints = np.array([[1,4,9],[2,4,5]])
+waypointdirections = np.array([[2,3,1],[2,1,0]])
 start_time = 0
-control_points, scale_factor = trajectory_gen.generate_trajectory(waypoints)
+control_points, scale_factor = trajectory_gen.generate_trajectory(waypoints,waypointdirections)
 bspline = BsplineEvaluation(control_points, order, start_time, scale_factor, False)
 number_data_points = 1000
 spline_data, time_data = bspline.get_spline_data(number_data_points)
@@ -31,4 +32,4 @@ plt.title("Optimized 5th order B-Spline")
 plt.legend()
 plt.show()
 
-bspline.plot_derivative(number_data_points, 4)
+bspline.plot_derivative(number_data_points, 1)
