@@ -4,10 +4,10 @@ import matplotlib.pyplot as plt
 from bsplinegenerator.bsplines import BsplineEvaluation
 from trajectorygenerator.path_generator import PathGenerator
 
-# waypoints = np.array([[1,4,9],[2,4,5]])
-# directions = np.array([0,np.pi/2,0])
-waypoints = np.array([[1,9],[2,5]])
-directions = np.array([0,0])
+waypoints = np.array([[1,4,9],[2,4,5]])
+directions = np.array([0,np.pi/2,0])
+# waypoints = np.array([[1,9],[2,5]])
+# directions = np.array([0,0])
 max_curvature = 1
 dimension = np.shape(waypoints)[0]
 order = 3

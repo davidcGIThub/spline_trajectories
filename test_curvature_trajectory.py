@@ -5,7 +5,7 @@ from bsplinegenerator.bsplines import BsplineEvaluation
 from trajectorygenerator.trajectory_generator import TrajectoryGenerator
 from trajectorygenerator.piecewise_bsplines import PiecewiseBsplineEvaluation
 
-order = 2
+order = 3
 dimension = 2
 derivative_order = 1
 # trajectory_gen = ConstrainedTrajectory(ObjectiveType.MINIMIZE_SNAP, dimension)
